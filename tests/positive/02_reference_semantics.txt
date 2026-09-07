@@ -1,0 +1,47 @@
+// test 02 -- user-defined types are reference types
+
+type User is record
+    var id   : integer
+    var arr  : array [4] integer
+    var flag : boolean
+end
+
+type IntArr is array [3] integer
+
+routine record_alias_test() is
+    var alice : User
+    var ben   : User
+
+    alice.id     := 1
+    alice.arr[1] := 10
+    alice.flag   := true
+
+    ben := alice             
+
+    print ben.id              // 1
+    print ben.arr[1]          // 10
+
+    alice.id     := 2
+    alice.arr[1] := 20
+
+    print ben.id              // 2 
+    print ben.arr[1]          // 20
+end
+
+routine array_alias_test() is
+    var a : IntArr
+    var b : IntArr
+
+    a[1] := 1
+    b := a
+    a[1] := 99
+    print b[1]                // 99
+end
+
+routine nested_record_test() is
+    var u : User
+    u.id := 7
+    u.arr[2] := 5
+    u.arr[3] := u.arr[2] + 1
+    print u.id, u.arr[2], u.arr[3]   // 7, 5, 6
+end

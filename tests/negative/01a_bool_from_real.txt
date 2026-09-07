@@ -1,0 +1,8 @@
+// test 01a -- boolean := real is illegal by the conformance table
+// expected: COMPILE ERROR
+
+routine bad_bool_from_real() is
+    var r : real is 1.0
+    var b : boolean
+    b := r
+end

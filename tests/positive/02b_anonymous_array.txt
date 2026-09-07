@@ -1,0 +1,7 @@
+// test 02b 
+
+routine bad_anon_array() is
+    var a : array [3] integer
+    var b : array [3] integer
+    b := a
+end

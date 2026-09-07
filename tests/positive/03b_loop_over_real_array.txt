@@ -1,0 +1,12 @@
+// test 03b 
+
+routine real_loop_test() is
+    var arr : array [3] real
+    arr[1] := 1.5
+    arr[2] := 2.5
+    arr[3] := 3.5
+
+    for x in arr loop
+        print x                  // 1.5, 2.5, 3.5
+    end
+end
