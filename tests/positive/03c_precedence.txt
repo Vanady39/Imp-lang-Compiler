@@ -2,12 +2,14 @@
 // taken literally, the grammar puts * / % in Simple and + - in Factor,
 // which makes multiplication bind LOOSER than addition:
 //     2 + 3 * 4  would parse as  (2 + 3) * 4  =  20
-// Уточнить 
+// PENDING: confirm precedence before treating this file as a pass/fail test.
+// Arithmetic expectations below assume conventional precedence.
+// DECISIONS.md #5a: the current suite assumes equal, left-associative and/or.
 
 routine precedence_test() is
     print 2 + 3 * 4              // 14, not 20
     print 10 - 2 * 3             // 4, not 24
     print (2 + 3) * 4            // 20 -- parentheses force the other grouping
     print 1 + 2 < 4              // true -- relations bind looser than arithmetic
-    print true and false or true // OPEN: and/or have equal precedence here
+    print true or false and false // false under the suite assumption; true if and binds tighter
 end

@@ -1,4 +1,4 @@
-// test 05 -- scoping, shadowing and type inference
+// test 04 -- scoping, shadowing and type inference
 // expected: compiles, runs, prints the values in the comments
 
 type MyInt is integer

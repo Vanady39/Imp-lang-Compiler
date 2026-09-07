@@ -1,4 +1,4 @@
-// test 05e -- result types of arithmetic
+// test 04e -- result types of arithmetic
 
 routine arith_inference_test() is
     var mixed is 1 + 2.5         // 3.5
@@ -9,7 +9,7 @@ routine arith_inference_test() is
     probe := mixed
     print probe                  // 4
 
-    print div
+    print div                    // 3.5
     print rem                    // 1
 
     var cmp is 1 < 2             // boolean

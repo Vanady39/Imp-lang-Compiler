@@ -1,4 +1,4 @@
-// test 05c -- the strictest proof that inference works
+// test 04c -- an inferred real cannot be assigned to boolean
 // expected: COMPILE ERROR
 
 routine bad_inference() is

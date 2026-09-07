@@ -1,5 +1,7 @@
 // test 01c -- same violation, but the value arrives through a parameter
 // expected: COMPILE OK, RUNTIME ERROR on the third call
+// entry: driver
+// expected output before failure: true, then false (one value per line)
 
 routine to_bool(n : integer) : boolean is
     var b : boolean

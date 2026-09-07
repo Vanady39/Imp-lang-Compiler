@@ -1,0 +1,20 @@
+// test 05 -- forward declaration and return from inside a conditional
+// entry: forward_return_test
+// expected: COMPILE OK, RUN OK
+// expected output (one value per line): 10, 8
+// Project I pp. 5-6: forward declaration must match the later definition.
+// DECISIONS.md #3, #4: empty parameter lists and return Expression are allowed.
+
+routine select_value(n : integer) : integer
+
+routine forward_return_test() is
+    print select_value(0)        // 10
+    print select_value(7)        // 8
+end
+
+routine select_value(n : integer) : integer is
+    if n = 0 then
+        return 10
+    end
+    return n + 1
+end

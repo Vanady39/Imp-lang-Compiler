@@ -1,8 +1,8 @@
 // test 01b -- boolean := integer with a value other than 1 or 0
 // expected: COMPILE ERROR
+// DECISIONS.md #10: reject a compile-time constant outside {0, 1}.
 
 routine bad_bool_from_int_const() is
-    var n : integer is 5
     var b : boolean
-    b := n
+    b := 5
 end

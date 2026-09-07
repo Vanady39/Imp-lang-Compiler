@@ -1,7 +1,12 @@
-// test 02b 
+// test 02b -- anonymous array compatibility and reference semantics
+// entry: anonymous_array_test
+// expected: COMPILE OK, prints 9
 
-routine bad_anon_array() is
+routine anonymous_array_test() is
     var a : array [3] integer
     var b : array [3] integer
+    a[1] := 7
     b := a
+    a[1] := 9
+    print b[1]                  // 9
 end

@@ -1,0 +1,13 @@
+// test 05 -- a call must supply every required argument
+// expected: COMPILE ERROR during semantic analysis at add(1)
+// expected diagnostic: add requires 2 arguments, but 1 was supplied
+// Exact diagnostic wording is not prescribed; unrelated errors do not pass.
+// Project I p. 4 requires argument count to equal parameter count.
+
+routine add(a : integer, b : integer) : integer is
+    return a + b
+end
+
+routine wrong_argument_count_test() is
+    print add(1)
+end
