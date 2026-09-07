@@ -48,7 +48,7 @@ routine synonym_test() is
 
     b := a
     a := b
-    print a, b                   // 10, 5
+    print a, b                   // 10, 10
 end
 
 routine inference_test() is
