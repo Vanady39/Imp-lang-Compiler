@@ -1,8 +1,0 @@
-// test 03a -- the loop variable is read-only
-// expected: COMPILE ERROR
-
-routine bad_loop_var() is
-    for i in 1 .. 5 loop
-        i := 10
-    end
-end

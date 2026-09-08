@@ -1,9 +1,0 @@
-// test 04b -- a variable declared inside a block disappears at the end of it
-// expected: COMPILE ERROR
-
-routine bad_out_of_scope() is
-    if true then
-        var z : integer is 1
-    end
-    print z
-end

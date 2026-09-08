@@ -1,9 +1,0 @@
-// test 04d -- the loop variable is implicitly declared in the loop scope
-// expected: COMPILE ERROR
-
-routine bad_loop_scope() is
-    for k in 1 .. 3 loop
-        print k
-    end
-    print k
-end

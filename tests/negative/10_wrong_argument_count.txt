@@ -1,0 +1,7 @@
+routine show(x : integer) is
+    print x
+end
+
+routine main() is
+    show(1, 2)
+end

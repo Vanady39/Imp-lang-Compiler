@@ -1,0 +1,5 @@
+routine main() is
+    var x : integer
+    x := 3.7
+    print x
+end

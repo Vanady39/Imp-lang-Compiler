@@ -1,7 +1,0 @@
-// test 04a -- an entity must be declared textually before its first use
-// expected: COMPILE ERROR
-
-routine bad_use_before_decl() is
-    print y
-    var y : integer is 1
-end

@@ -1,0 +1,5 @@
+routine increment(x : integer) : integer => x + 1
+
+routine main() is
+    print increment(4)
+end

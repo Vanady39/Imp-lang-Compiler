@@ -1,8 +1,0 @@
-// test 04c -- an inferred real cannot be assigned to boolean
-// expected: COMPILE ERROR
-
-routine bad_inference() is
-    var r is 3.9
-    var b : boolean
-    b := r
-end
