@@ -34,8 +34,10 @@ These are provisional and **not confirmed official rules**.
 | A1 | A routine declaration may have an empty parameter list, as in `routine main()`. | The p. 5 `Parameters` production requires at least one parameter. All 10 files use an entry with no arguments to avoid unspecified entry-argument conversion. No test makes a zero-argument call in source code. |
 | A2 | Declaring an array or record variable creates an object whose elements or fields can be assigned. | Project I describes reference types and access but does not explicitly define object creation. Tests 07 and 08 need writable objects. They assign every accessed member before reading it; no default zero initialization is assumed. |
 | A3 | In a typed routine, `=> Expression` evaluates and returns that expression's value. | This body syntax is official on p. 5, but its return behavior is not separately explained in prose. Test 09 uses this interpretation instead of extending the Statement grammar with `return`. |
+| A4 | The only comment form is the single-line `//`, running to the end of the line and skipped as whitespace. There are **no** multi-line comments: `/*` is not a comment opener and simply scans as the two operators `/` and `*`. The newline that ends a `//` comment is not consumed and stays a significant `Newline` token. | Project I gives no lexical rule for comments at all (see section C). The scanner needs a fixed answer, and the single-line form is the smallest one that is useful. Leaving out `/* */` also removes the unterminated-comment error case entirely. The 10 active test sources contain no comments, so this assumption does not affect their expected output. |
 
-These are the only adopted assumptions needed by this suite. They should be
+A1-A3 are the assumptions needed by the test suite; A4 is needed by the scanner
+rather than by any test file. They should be
 confirmed with the lecturer or TA. Removing them entirely would require changing
 the entry convention or dropping aggregate access / returned-value coverage.
 
@@ -47,7 +49,7 @@ The following gaps are recorded, not resolved by additional team rules.
 | --- | --- | --- |
 | `return` | p. 6 mentions a return statement, but p. 3 omits it from `Statement`; its syntax is missing. | No `return` statement is used. Test 09 uses the listed expression-body syntax with A3. |
 | Empty parameter list | p. 5 requires a first parameter in `Parameters`; it does not explicitly permit `()` in declarations. | All entries depend on A1; lecturer/TA confirmation remains open. |
-| Comment syntax | No lexical rule for comments is provided. | Source files contain no comments. |
+| Comment syntax | No lexical rule for comments is provided. Resolved provisionally by A4, which is a team choice and not an official rule. | Source files contain no comments, so A4 does not change any expected output. The scanner implements A4. |
 | Array/record allocation | Creation, default initialization, and lifetime are not explicitly defined for these reference types (pp. 2-3). | Tests 07 and 08 depend only on A2 and explicit member assignments. Default values and lifetime beyond the entry routine are not tested. |
 | Operator precedence | p. 6 says conventional priorities, but the `Simple` / `Factor` productions give addition tighter binding than multiplication. Boolean operators also share one grammar level. | No test combines competing arithmetic or boolean operators. The while comparison contains no arithmetic subexpression. |
 | Real-to-integer rounding | p. 3 specifies nearest-integer rounding but gives no halfway tie rule. | Test 03 uses `3.7 -> 4`, whose nearest integer is unique. No `floor(x + 0.5)` rule is adopted. |

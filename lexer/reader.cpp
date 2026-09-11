@@ -2,7 +2,25 @@
 
 using namespace std;
 
-Reader::Reader(string s) : source(s), position(0) {}
+static string normalize(string s) {
+    if (s.size() >= 3 && (unsigned char)s[0] == 0xEF && (unsigned char)s[1] == 0xBB && (unsigned char)s[2] == 0xBF) {
+        s.erase(0, 3);
+    }
+    string result = "";
+    for (size_t i = 0; i < s.size(); i++) {
+        if (s[i] == '\r') {
+            if (i + 1 < s.size() && s[i + 1] == '\n') {
+                i++;
+            }
+            result += '\n';
+        } else {
+            result += s[i];
+        }
+    }
+    return result;
+}
+
+Reader::Reader(string s) : source(normalize(s)), position(0) {}
 
 char Reader::peek(int offset) {
     size_t i = position + offset;
