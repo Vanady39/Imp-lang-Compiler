@@ -140,127 +140,54 @@ public:
         switch (c)
         {
         case ':':
-            if (reader->peek() == '=')
-            {
-                reader->get();
-                Span span = {line, column, column+1};
-                return {span, tokenAssign, 0, 0, ""};
-            } else {
-                Span span = {line, column, column};
-                return {span, tokenColon, 0, 0, ""};
-            }
-            break;
+            return scanDoubleOrSingleOperator('=', tokenAssign, tokenColon, line, column);
         case '.':
-            if (reader->peek() == '.')
-            {
-                reader->get();
-                Span span = {line, column, column+1};
-                return {span, tokenDotDot, 0, 0, ""};
-            }
-            else {
-                Span span = {line, column, column};
-                return {span, tokenDot, 0, 0, ""};
-            }
-            break;
+            return scanDoubleOrSingleOperator('.', tokenDotDot, tokenDot, line, column);
         case '=':
-            if (reader->peek() == '>'){
-                reader->get();
-                Span span = {line, column, column+1};
-                return {span, tokenArrow, 0, 0, ""};
-            } else {
-                Span span = {line, column, column};
-                return {span, tokenEqual, 0, 0, ""};
-            }
-            break;
+            return scanDoubleOrSingleOperator('>', tokenArrow, tokenEqual, line, column);
         case '<':
-            if (reader->peek() == '=')
-            {
-                reader->get();
-                Span span = {line, column, column+1};
-                return {span, tokenLessEqual, 0, 0, ""};
-            } else {
-                Span span = {line, column, column};
-                return {span, tokenLess, 0, 0, ""};
-            }
-            break;
+            return scanDoubleOrSingleOperator('=', tokenLessEqual, tokenLess, line, column);
         case '>':
-            if (reader->peek() == '=')
-            {
-                reader->get();
-                Span span = {line, column, column+1};
-                return {span, tokenGreaterEqual, 0, 0, ""};
-            } else {
-                Span span = {line, column, column};
-                return {span, tokenGreater, 0, 0, ""};
-            }
-            break;
+            return scanDoubleOrSingleOperator('=', tokenGreaterEqual, tokenGreater, line, column);
         case '/':
-            if (reader->peek() == '=')
-            {
-                reader->get();
-                Span span = {line, column, column+1};
-                return {span, tokenNotEqual, 0, 0, ""};
-            } else {
-                Span span = {line, column, column};
-                return {span, tokenSlash, 0, 0, ""};
-            }
-            break;
-        case '+': {
-            Span span = {line, column, column};
-            return {span, tokenPlus, 0, 0, ""};
-            break;
-        }
-        case '-': {
-            Span span = {line, column, column};
-            return {span, tokenMinus, 0, 0, ""};
-            break;
-        }
-        case '*': {
-            Span span = {line, column, column};
-            return {span, tokenStar, 0, 0, ""};
-            break;
-        }
-        case '%': {
-            Span span = {line, column, column};
-            return {span, tokenPercent, 0, 0, ""};
-            break;
-        }
-        case ',': {
-            Span span = {line, column, column};
-            return {span, tokenComma, 0, 0, ""};
-            break;
-        }
-        case ';': {
-            Span span = {line, column, column};
-            return {span, tokenSemicolon, 0, 0, ""};
-            break;
-        }
-        case '(': {
-            Span span = {line, column, column};
-            return {span, tokenLeftParen, 0, 0, ""};
-            break;
-        }
-        case ')': {
-            Span span = {line, column, column};
-            return {span, tokenRightParen, 0, 0, ""};
-            break;
-        }
-        case '[': {
-            Span span = {line, column, column};
-            return {span, tokenLeftBracket, 0, 0, ""};
-            break;
-        }
-        case ']': {
-            Span span = {line, column, column};
-            return {span, tokenRightBracket, 0, 0, ""};
-            break;
-        }
-        default: {
+            return scanDoubleOrSingleOperator('=', tokenNotEqual, tokenSlash, line, column);
+        case '+':
+            return makeToken(tokenPlus, line, column, column);
+        case '-':
+            return makeToken(tokenMinus, line, column, column);
+        case '*':
+            return makeToken(tokenStar, line, column, column);
+        case '%':
+            return makeToken(tokenPercent, line, column, column);
+        case ',':
+            return makeToken(tokenComma, line, column, column);
+        case ';':
+            return makeToken(tokenSemicolon, line, column, column);
+        case '(':
+            return makeToken(tokenLeftParen, line, column, column);
+        case ')':
+            return makeToken(tokenRightParen, line, column, column);
+        case '[':
+            return makeToken(tokenLeftBracket, line, column, column);
+        case ']':
+            return makeToken(tokenRightBracket, line, column, column);
+        default:
             errors.push_back(format("Invalid symbol {} on line {} column {}", c, line, column));
-            Span span = {line, column, column};
-            return {span, tokenUnknown, 0, 0, ""};
+            return makeToken(tokenUnknown, line, column, column);
         }
+    }
+
+    Token scanDoubleOrSingleOperator(char secondChar, TokenCode doubleCode, TokenCode singleCode, int line, int column) {
+        if (reader->peek() == secondChar) {
+            reader->get();
+            return makeToken(doubleCode, line, column, column + 1);
         }
+        return makeToken(singleCode, line, column, column);
+    }
+
+    Token makeToken(TokenCode code, int line, int posBegin, int posEnd) {
+        Span span = {line, posBegin, posEnd};
+        return {span, code, 0, 0, ""};
     }
 
     void skipInsignificant() override {
