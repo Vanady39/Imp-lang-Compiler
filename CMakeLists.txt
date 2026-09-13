@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(lexer
     lexer/lexer.cpp
     lexer/reader.cpp
+    lexer/token_name_map.cpp
 )
 
 target_include_directories(lexer

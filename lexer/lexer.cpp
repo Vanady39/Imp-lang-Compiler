@@ -1,94 +1,9 @@
 #include "lexer.h"
+#include "token_name_map.h"
 #include <stdexcept>
 #include <format>
 
 using namespace std;
-
-const unordered_map<string, TokenCode> tokenMap = {
-    {"var", tokenVar},
-    {"type", tokenType},
-    {"routine", tokenRoutine},
-    {"is", tokenIs},
-    {"integer", tokenInteger},
-    {"real", tokenReal},
-    {"boolean", tokenBoolean},
-    {"record", tokenRecord},
-    {"array", tokenArray},
-    {"while", tokenWhile},
-    {"loop", tokenLoop},
-    {"for", tokenFor},
-    {"in", tokenIn},
-    {"reverse", tokenReverse},
-    {"if", tokenIf},
-    {"then", tokenThen},
-    {"else", tokenElse},
-    {"print", tokenPrint},
-    {"return", tokenReturn},
-    {"end", tokenEnd},
-    {"and", tokenAnd},
-    {"or", tokenOr},
-    {"xor", tokenXor},
-    {"not", tokenNot},
-    {"true", tokenTrue},
-    {"false", tokenFalse}
-};
-
-const unordered_map<TokenCode, string> nameMap = {
-    {tokenVar, "var"},
-    {tokenType, "type"},
-    {tokenRoutine, "routine"},
-    {tokenIs, "is"},
-    {tokenInteger, "integer"},
-    {tokenReal, "real"},
-    {tokenBoolean, "boolean"},
-    {tokenRecord, "record"},
-    {tokenArray, "array"},
-    {tokenWhile, "while"},
-    {tokenLoop, "loop"},
-    {tokenFor, "for"},
-    {tokenIn, "in"},
-    {tokenReverse, "reverse"},
-    {tokenIf, "if"},
-    {tokenThen, "then"},
-    {tokenElse, "else"},
-    {tokenPrint, "print"},
-    {tokenReturn, "return"},
-    {tokenEnd, "end"},
-    {tokenAnd, "and"},
-    {tokenOr, "or"},
-    {tokenXor, "xor"},
-    {tokenNot, "not"},
-    {tokenTrue, "true"},
-    {tokenFalse, "false"},
-    {tokenAssign, ":="},
-    {tokenDotDot, ".."},
-    {tokenArrow, "=>"},
-    {tokenLessEqual, "<="},
-    {tokenGreaterEqual, ">="},
-    {tokenNotEqual, "/="},
-    {tokenLess, "<"},
-    {tokenGreater, ">"},
-    {tokenEqual, "="},
-    {tokenPlus, "+"},
-    {tokenMinus, "-"},
-    {tokenStar, "*"},
-    {tokenSlash, "/"},
-    {tokenPercent, "%"},
-    {tokenDot, "."},
-    {tokenComma, ","},
-    {tokenSemicolon, ";"},
-    {tokenColon, ":"},
-    {tokenLeftParen, "("},
-    {tokenRightParen, ")"},
-    {tokenLeftBracket, "["},
-    {tokenRightBracket, "]"},
-    {tokenIdentifier, "identifier"},
-    {tokenIntegerLiteral, "integer literal"},
-    {tokenRealLiteral, "real literal"},
-    {tokenNewline, "end of line"},
-    {tokenEOF, "end of file"},
-    {tokenUnknown, "invalid token"}
-};
 
 string tokenName(TokenCode code) {
     auto val = nameMap.find(code);
@@ -124,7 +39,9 @@ bool convert_real(string text, double& value, string& error) {
     return false;
 }
 
-Lexer::Lexer(string source) : reader(source) {}
+Lexer::Lexer(string source) : reader(makeReader(source)) {}
+
+Lexer::~Lexer() = default;
 
 vector<Token> Lexer::GetBuffer(string path) {
     vector<Token> tokens;
@@ -139,13 +56,13 @@ const vector<string>& Lexer::GetErrors() const { return errors; }
 
 Token Lexer::getNextToken() {
     skipInsignificant();
-    auto pos = reader.here();
-    char c = reader.peek();
+    auto pos = reader->here();
+    char c = reader->peek();
     if (c == '\0') {
         return { { pos.line, pos.column, pos.column }, tokenEOF, 0, 0, "" };
     }
     if (c == '\n') {
-        reader.get();
+        reader->get();
         return { { pos.line, pos.column, pos.column }, tokenNewline, 0, 0, "" };
     }
     if (is_identifier_start(c)) {
@@ -159,8 +76,8 @@ Token Lexer::getNextToken() {
 
 Token Lexer::scanWord(int line, int column) {
     string buffer = "";
-    while (is_identifier_part(reader.peek())) {
-        buffer += reader.get();
+    while (is_identifier_part(reader->peek())) {
+        buffer += reader->get();
     }
     auto val = tokenMap.find(buffer);
     TokenCode code;
@@ -179,16 +96,16 @@ Token Lexer::scanWord(int line, int column) {
 
 Token Lexer::scanNumber(int line, int column) {
     string buffer = "";
-    while (is_digit(reader.peek()) ){
-        buffer += reader.get();
+    while (is_digit(reader->peek()) ){
+        buffer += reader->get();
     }
     bool is_real = false;
-    if (reader.peek() == '.')  {
-        if (reader.peek(1) != '.' && is_digit(reader.peek(1))){
+    if (reader->peek() == '.')  {
+        if (reader->peek(1) != '.' && is_digit(reader->peek(1))){
             is_real = true;
-            buffer += reader.get();
-            while (is_digit(reader.peek())) {
-                buffer += reader.get();
+            buffer += reader->get();
+            while (is_digit(reader->peek())) {
+                buffer += reader->get();
             }
         }
     }
@@ -212,13 +129,13 @@ Token Lexer::scanNumber(int line, int column) {
 }
 
 Token Lexer::scan_operator(int line, int column) {
-    char c = reader.get();
+    char c = reader->get();
     switch (c)
     {
     case ':':
-        if (reader.peek() == '=')
+        if (reader->peek() == '=')
         {
-            reader.get();
+            reader->get();
             Span span = {line, column, column+1};
             return {span, tokenAssign, 0, 0, ""};
         } else {
@@ -227,9 +144,9 @@ Token Lexer::scan_operator(int line, int column) {
         }
         break;
     case '.':
-        if (reader.peek() == '.')
+        if (reader->peek() == '.')
         {
-            reader.get();
+            reader->get();
             Span span = {line, column, column+1};
             return {span, tokenDotDot, 0, 0, ""};
         }
@@ -239,8 +156,8 @@ Token Lexer::scan_operator(int line, int column) {
         }
         break;
     case '=':
-        if (reader.peek() == '>'){
-            reader.get();
+        if (reader->peek() == '>'){
+            reader->get();
             Span span = {line, column, column+1};
             return {span, tokenArrow, 0, 0, ""};
         } else {
@@ -249,9 +166,9 @@ Token Lexer::scan_operator(int line, int column) {
         }
         break;
     case '<':
-        if (reader.peek() == '=')
+        if (reader->peek() == '=')
         {
-            reader.get();
+            reader->get();
             Span span = {line, column, column+1};
             return {span, tokenLessEqual, 0, 0, ""};
         } else {
@@ -260,9 +177,9 @@ Token Lexer::scan_operator(int line, int column) {
         }
         break;
     case '>':
-        if (reader.peek() == '=')
+        if (reader->peek() == '=')
         {
-            reader.get();
+            reader->get();
             Span span = {line, column, column+1};
             return {span, tokenGreaterEqual, 0, 0, ""};
         } else {
@@ -271,9 +188,9 @@ Token Lexer::scan_operator(int line, int column) {
         }
         break;
     case '/':
-        if (reader.peek() == '=')
+        if (reader->peek() == '=')
         {
-            reader.get();
+            reader->get();
             Span span = {line, column, column+1};
             return {span, tokenNotEqual, 0, 0, ""};
         } else {
@@ -342,7 +259,7 @@ Token Lexer::scan_operator(int line, int column) {
 void Lexer::skipInsignificant() {
     while (true) {
         skipSpaces();
-        if (reader.peek() == '/' && reader.peek(1) == '/') {
+        if (reader->peek() == '/' && reader->peek(1) == '/') {
             skipShortComment();
             continue;
         }
@@ -351,16 +268,16 @@ void Lexer::skipInsignificant() {
 }
 
 void Lexer::skipSpaces() {
-    while (reader.peek() == ' ' || reader.peek() == '\t') {
-        reader.get();
+    while (reader->peek() == ' ' || reader->peek() == '\t') {
+        reader->get();
     }
 }
 
 void Lexer::skipShortComment() {
-    reader.get();
-    reader.get();
-    while (reader.peek() != '\n' && reader.peek() != '\0') {
-        reader.get();
+    reader->get();
+    reader->get();
+    while (reader->peek() != '\n' && reader->peek() != '\0') {
+        reader->get();
     }
 }
 

@@ -2,7 +2,9 @@
 #define LEXER_H
 
 #include "reader.h"
-#include "vector"
+
+#include <memory>
+#include <vector>
 
 using namespace std;
 
@@ -84,11 +86,12 @@ struct Token {
 };
 
 class Lexer {
-    Reader reader;
+    unique_ptr<IReader> reader;
 
     vector<string> errors = vector<string>();
 public:
     Lexer(string source);
+    ~Lexer();
 
     vector<Token> GetBuffer(string path);
     const vector<string>& GetErrors() const;
