@@ -1,9 +1,8 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "reader.h"
-
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -85,26 +84,14 @@ struct Token {
     string ID;
 };
 
-class Lexer {
-    unique_ptr<IReader> reader;
-
-    vector<string> errors = vector<string>();
+class ILexer {
 public:
-    Lexer(string source);
-    ~Lexer();
+    virtual ~ILexer() = default;
 
-    vector<Token> GetBuffer(string path);
-    const vector<string>& GetErrors() const;
-    Token getNextToken();
-    Token scanWord(int line, int column);
-    Token scanNumber(int line, int column);
-    Token scan_operator(int line, int column);
-    void skipInsignificant();
-    void skipSpaces();
-    void skipShortComment();
-    bool is_digit(char c);
-    bool is_identifier_start(char c);
-    bool is_identifier_part(char c);
+    virtual vector<Token> GetBuffer(string path) = 0;
+    virtual const vector<string>& GetErrors() const = 0;
 };
+
+unique_ptr<ILexer> makeLexer(const string& source);
 
 #endif

@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 
 using namespace std;
@@ -26,8 +27,8 @@ int main(int argc, char** argv) {
         source += '\n';
     }
 
-    Lexer lexer(source);
-    vector<Token> tokens = lexer.GetBuffer(argv[1]);
+    unique_ptr<ILexer> lexer = makeLexer(source);
+    vector<Token> tokens = lexer->GetBuffer(argv[1]);
 
     for (int i = 0; i < tokens.size(); i++) {
         Token token = tokens[i];
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
         cout << endl;
     }
 
-    const vector<string>& errors = lexer.GetErrors();
+    const vector<string>& errors = lexer->GetErrors();
 
     for (int i = 0; i < errors.size(); i++) {
         cout << errors[i] << endl;
