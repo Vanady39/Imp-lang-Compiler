@@ -61,8 +61,7 @@ public:
         return errors;
     }
 
-private:
-    Token getNextToken() {
+    Token getNextToken() override {
         skipInsignificant();
         auto pos = reader->here();
         char c = reader->peek();
@@ -82,7 +81,7 @@ private:
         return scan_operator(pos.line, pos.column);
     }
 
-    Token scanWord(int line, int column) {
+    Token scanWord(int line, int column) override {
         string buffer = "";
         while (is_identifier_part(reader->peek())) {
             buffer += reader->get();
@@ -102,7 +101,7 @@ private:
         }
     }
 
-    Token scanNumber(int line, int column) {
+    Token scanNumber(int line, int column) override {
         string buffer = "";
         while (is_digit(reader->peek()) ){
             buffer += reader->get();
@@ -136,7 +135,7 @@ private:
 
     }
 
-    Token scan_operator(int line, int column) {
+    Token scan_operator(int line, int column) override {
         char c = reader->get();
         switch (c)
         {
@@ -264,7 +263,7 @@ private:
         }
     }
 
-    void skipInsignificant() {
+    void skipInsignificant() override {
         while (true) {
             skipSpaces();
             if (reader->peek() == '/' && reader->peek(1) == '/') {
@@ -275,13 +274,13 @@ private:
         }
     }
 
-    void skipSpaces() {
+    void skipSpaces() override {
         while (reader->peek() == ' ' || reader->peek() == '\t') {
             reader->get();
         }
     }
 
-    void skipShortComment() {
+    void skipShortComment() override {
         reader->get();
         reader->get();
         while (reader->peek() != '\n' && reader->peek() != '\0') {
@@ -289,15 +288,15 @@ private:
         }
     }
 
-    bool is_digit(char c) {
+    bool is_digit(char c) override {
         return c >= '0' && c <= '9';
     }
 
-    bool is_identifier_start(char c) {
+    bool is_identifier_start(char c) override {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
     }
 
-    bool is_identifier_part(char c) {
+    bool is_identifier_part(char c) override {
         return is_identifier_start(c) || is_digit(c);
     }
 };
