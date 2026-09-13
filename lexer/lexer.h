@@ -1,9 +1,10 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <string>
-#include <vector>
 #include "reader.h"
+#include "vector"
+
+using namespace std;
 
 enum TokenCode {
     tokenVar,
@@ -62,13 +63,14 @@ enum TokenCode {
     tokenUnknown
 };
 
-std::string tokenName(TokenCode code);
-bool convert_integer(std::string text, int& value, std::string& error);
-bool convert_real(std::string text, double& value, std::string& error);
+string tokenName(TokenCode code);
+bool convert_integer(string text, int& value, string& error);
+bool convert_real(string text, double& value, string& error);
 
 struct Span {
     int lineNum;
-    int posBegin, posEnd;
+    int posBegin;
+    int posEnd;
 public:
     Span(int line, int begin, int end) : lineNum(line), posBegin(begin), posEnd(end) {}
 };
@@ -78,17 +80,18 @@ struct Token {
     TokenCode code;
     int intValue;
     double realValue;
-    std::string ID;
-
+    string ID;
 };
 
 class Lexer {
     Reader reader;
-    std::vector<std::string> errors = std::vector<std::string>();
+
+    vector<string> errors = vector<string>();
 public:
-    Lexer(std::string source);
-    std::vector<Token> GetBuffer(std::string path);
-    const std::vector<std::string>& GetErrors() const;
+    Lexer(string source);
+
+    vector<Token> GetBuffer(string path);
+    const vector<string>& GetErrors() const;
     Token getNextToken();
     Token scanWord(int line, int column);
     Token scanNumber(int line, int column);

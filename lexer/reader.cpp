@@ -2,12 +2,22 @@
 
 using namespace std;
 
+static bool startsWithUtf8Bom(string s) {
+    return s.size() >= 3 &&
+           (unsigned char)s[0] == 0xEF &&
+           (unsigned char)s[1] == 0xBB &&
+           (unsigned char)s[2] == 0xBF;
+}
+
 static string normalize(string s) {
-    if (s.size() >= 3 && (unsigned char)s[0] == 0xEF && (unsigned char)s[1] == 0xBB && (unsigned char)s[2] == 0xBF) {
+    if (startsWithUtf8Bom(s)) {
         s.erase(0, 3);
     }
+
     string result = "";
+
     for (size_t i = 0; i < s.size(); i++) {
+        // приводит конец строки к виду: \n (а сщуествует: \r\n и \r) 
         if (s[i] == '\r') {
             if (i + 1 < s.size() && s[i + 1] == '\n') {
                 i++;

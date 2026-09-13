@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <string>
 
+using namespace std;
+
 class Position {
 public:
     int line, column;
@@ -11,11 +13,11 @@ public:
 };
 
 class Reader {
-    std::string source;
+    string source;
     size_t position;
     int line = 1, column = 1;
 public:
-    Reader(std::string s);
+    Reader(string s);
     char peek(int offset = 0);
     char get();
     bool eof() const;
