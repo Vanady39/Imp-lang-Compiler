@@ -62,3 +62,48 @@ The following gaps are recorded, not resolved by additional team rules.
 
 The compiler's exact print formatting is also unspecified (p. 5). The README
 therefore records ordered numeric values, not mandatory whitespace or punctuation.
+
+## D. Current build and lexer runner
+
+The repository now has a minimal CMake build for the lexer. It builds two
+artifacts:
+
+| Artifact | Source | Purpose |
+| --- | --- | --- |
+| `liblexer.a` | `lexer/lexer.cpp`, `lexer/reader.cpp` | Static library containing the lexer and reader implementation. |
+| `lexer_build` | `main.cpp` linked with `lexer` | Small runner that reads one source file and prints the tokens produced by the lexer. |
+
+`lexer_build` is only a lexer runner. It does not parse, type-check, execute,
+or compile the test programs. Its output is a token listing with source spans,
+not the expected program output described in [tests/README.md](tests/README.md).
+
+Configure and build from the repository root:
+
+```bash
+cmake -S . -B build
+cmake --build build
+```
+
+Run the lexer on one test file:
+
+```bash
+./build/lexer_build tests/positive/01_assignment.txt
+```
+
+Run it on all positive test files:
+
+```bash
+for f in tests/positive/*.txt; do
+  echo "=== $f ==="
+  ./build/lexer_build "$f"
+done
+```
+
+Run it on the negative test file:
+
+```bash
+./build/lexer_build tests/negative/10_wrong_argument_count.txt
+```
+
+If the executable name changes later, update the `add_executable(...)` target in
+`CMakeLists.txt` and use the matching path under `build/`.
