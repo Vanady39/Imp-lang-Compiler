@@ -1,9 +1,11 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <memory>
 #include <string>
 #include <vector>
-#include "reader.h"
+
+using namespace std;
 
 enum TokenCode {
     tokenVar,
@@ -62,13 +64,14 @@ enum TokenCode {
     tokenUnknown
 };
 
-std::string tokenName(TokenCode code);
-bool convert_integer(std::string text, int& value, std::string& error);
-bool convert_real(std::string text, double& value, std::string& error);
+string tokenName(TokenCode code);
+bool convert_integer(string text, int& value, string& error);
+bool convert_real(string text, double& value, string& error);
 
 struct Span {
     int lineNum;
-    int posBegin, posEnd;
+    int posBegin;
+    int posEnd;
 public:
     Span(int line, int begin, int end) : lineNum(line), posBegin(begin), posEnd(end) {}
 };
@@ -78,27 +81,27 @@ struct Token {
     TokenCode code;
     int intValue;
     double realValue;
-    std::string ID;
-
+    string ID;
 };
 
-class Lexer {
-    Reader reader;
-    std::vector<std::string> errors = std::vector<std::string>();
+class ILexer {
 public:
-    Lexer(std::string source);
-    std::vector<Token> GetBuffer(std::string path);
-    const std::vector<std::string>& GetErrors() const;
-    Token getNextToken();
-    Token scanWord(int line, int column);
-    Token scanNumber(int line, int column);
-    Token scan_operator(int line, int column);
-    void skipInsignificant();
-    void skipSpaces();
-    void skipShortComment();
-    bool is_digit(char c);
-    bool is_identifier_start(char c);
-    bool is_identifier_part(char c);
+    virtual ~ILexer() = default;
+
+    virtual vector<Token> GetBuffer(string path) = 0;
+    virtual const vector<string>& GetErrors() const = 0;
+    virtual Token getNextToken() = 0;
+    virtual Token scanWord(int line, int column) = 0;
+    virtual Token scanNumber(int line, int column) = 0;
+    virtual Token scan_operator(int line, int column) = 0;
+    virtual void skipInsignificant() = 0;
+    virtual void skipSpaces() = 0;
+    virtual void skipShortComment() = 0;
+    virtual bool is_digit(char c) = 0;
+    virtual bool is_identifier_start(char c) = 0;
+    virtual bool is_identifier_part(char c) = 0;
 };
+
+unique_ptr<ILexer> makeLexer(const string& source);
 
 #endif
