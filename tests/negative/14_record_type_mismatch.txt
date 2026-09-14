@@ -1,0 +1,17 @@
+type Point is record
+    var x : integer
+end
+
+type OtherPoint is record
+    var x : integer
+end
+
+routine readPoint(point : Point) : integer is
+    return point.x
+end
+
+routine test() is
+    var other : OtherPoint
+    other.x := 7
+    print readPoint(other) // compile error: expected Point, received OtherPoint
+end

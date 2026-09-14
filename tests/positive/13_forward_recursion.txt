@@ -1,0 +1,13 @@
+routine factorial(n : integer) : integer
+
+routine test() is
+    print factorial(3) // 6
+end
+
+routine factorial(n : integer) : integer is
+    if n <= 1 then
+        return 1
+    else
+        return n * factorial(n - 1)
+    end
+end

@@ -1,0 +1,7 @@
+routine add(a : integer, b : integer) : integer is
+    return a + b
+end
+
+routine test() is
+    print add(1) // compile error
+end

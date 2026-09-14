@@ -1,0 +1,27 @@
+type Count is integer
+var x : Count is 10
+
+routine local(x : Count) is
+    if false then
+        print 99
+    else
+        type Count is boolean
+        var x : Count
+        x := 1
+        var bit : integer
+        bit := x
+        print bit // 1
+        x := 0
+        bit := x
+        print bit // 0
+    end
+    print x // 2
+end
+
+routine test() is
+    local(2)
+    print x // 10
+    if (true and false) or (true xor false) then
+        print (2 + 3) * 4, 7 % 3 // 20, 1
+    end
+end

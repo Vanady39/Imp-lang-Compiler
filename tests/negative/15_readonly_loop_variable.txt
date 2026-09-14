@@ -1,0 +1,5 @@
+routine test() is
+    for i in 1 .. 3 loop
+        i := 0 // compile error: loop variable is read-only
+    end
+end

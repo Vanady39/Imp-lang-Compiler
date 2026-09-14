@@ -1,0 +1,30 @@
+type Cell is record
+    var x : integer
+end
+type Numbers is array [1] integer
+
+routine update(c : Cell, a : Numbers) : Cell is
+    c.x := c.x + 1
+    a[1] := a[1] + 1
+    return c
+end
+
+routine identity(a : Numbers) : Numbers is
+    return a
+end
+
+routine test() is
+    var c : Cell
+    c.x := 1
+    var a : Numbers
+    a[1] := 2
+    var result : Cell
+    result := update(c, a)
+    print c.x, a[1] // 2, 3
+    result.x := 7
+    var alias : Numbers
+    alias := identity(a)
+    alias[1] := 8
+    update(c, a)
+    print c.x, a[1] // 8, 9
+end

@@ -1,0 +1,18 @@
+type Point is record
+    var x : integer
+end
+
+type Box is record
+    var point : Point
+end
+
+routine test() is
+    var p : Point
+    p.x := 2
+    var box : Box
+    box.point := p
+    var alias : Box
+    alias := box
+    alias.point.x := 7
+    print box.point.x, p.x // 7, 7
+end

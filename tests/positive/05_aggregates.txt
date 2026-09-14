@@ -1,0 +1,13 @@
+type Point is record
+    var x : integer
+end
+
+routine test() is
+    var a : array [2] integer
+    a[1] := 5
+    print a[1] // 5
+
+    var p : Point
+    p.x := 7
+    print p.x // 7
+end

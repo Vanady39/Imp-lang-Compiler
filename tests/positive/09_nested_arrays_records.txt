@@ -1,0 +1,21 @@
+type Numbers is array [1] integer
+type Row is record
+    var values : Numbers
+end
+type Rows is array [1] Row
+type Matrix is array [1] Numbers
+
+routine test() is
+    var a : Numbers
+    a[1] := 5
+    var row : Row
+    row.values := a
+    var rows : Rows
+    rows[1] := row
+    var matrix : Matrix
+    matrix[1] := a
+    rows[1].values[1] := 7
+    print matrix[1][1] // 7
+    matrix[1][1] := 9
+    print rows[1].values[1] // 9
+end

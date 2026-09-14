@@ -1,0 +1,7 @@
+routine add1(x : integer) : integer is
+    return x + 1
+end
+
+routine test() is
+    print add1(4) // 5
+end

@@ -1,0 +1,26 @@
+routine scan(a : array [] integer) is
+    for x in a loop
+        print x // 2, 4
+    end
+    for x in a reverse loop
+        print x // 4, 2
+    end
+end
+
+routine test() is
+    var a : array [2] integer
+    a[1] := 2
+    a[2] := 4
+    scan(a)
+    var upper is 2
+    for i in 1 .. upper reverse loop
+        print i // 2, 1
+        upper := 0
+    end
+    for i in 2 .. 1 loop
+        print 99 // must not execute
+    end
+    while false loop
+        print 99 // must not execute
+    end
+end

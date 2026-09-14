@@ -1,9 +1,0 @@
-type Cell is record
-    var value : integer
-end
-
-routine main() is
-    var c : Cell
-    c.value := 7
-    print c.value
-end

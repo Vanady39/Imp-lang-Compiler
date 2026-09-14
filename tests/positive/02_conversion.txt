@@ -1,5 +1,5 @@
-routine main() is
+routine test() is
     var x : integer
     x := 3.7
-    print x
+    print x // 4
 end

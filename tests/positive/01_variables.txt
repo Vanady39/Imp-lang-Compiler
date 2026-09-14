@@ -1,0 +1,8 @@
+routine test() is
+    var x : integer is 1
+    x := 2
+    print x // 2
+
+    var inferred is 5
+    print inferred // 5
+end
