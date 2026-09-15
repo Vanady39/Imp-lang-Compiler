@@ -1,7 +1,7 @@
 # Decisions for the simple test suite
 
 This document applies to the 15 active test files (the original 7 groups plus 8 additional cases) listed in
-[tests/README.md](tests/README.md). It distinguishes the supplied **Project I**
+[tests/README.md](../tests/README.md). It distinguishes the supplied **Project I**
 rules from the team's limited interpretations. It does not attempt to complete
 the entire language specification. Page numbers refer to Project I.pdf.
 
@@ -69,7 +69,7 @@ define output formatting or evaluation order. All such expressions in this suite
 are side-effect-free, so evaluation order does not change their values.
 
 The suite is conditionally valid under the assumptions above, not proven fully
-defined by the PDF alone. See [the per-file audit](tests/AUDIT.md). Conversions
+defined by the PDF alone. See [the per-file audit](../tests/AUDIT.md). Conversions
 and aggregate reference copying in tests 08, 10, and 12 now use explicit `:=`,
 so those checks do not require extending assignment conversion rules to typed
 initializers. Basic same-type initializers and type inference still use `is`.
@@ -86,7 +86,7 @@ artifacts:
 
 `lexer_build` is only a lexer runner. It does not parse, type-check, execute,
 or compile the test programs. Its output is a token listing with source spans,
-not the expected program output described in [tests/README.md](tests/README.md).
+not the expected program output described in [tests/README.md](../tests/README.md).
 
 Configure and build from the repository root:
 

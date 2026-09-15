@@ -16,7 +16,7 @@ The expected outputs below are ordered numeric values across executed
 semicolons. Project I p. 5 does not fix output whitespace or line formatting.
 
 The tests use the provisional interpretations in
-[DECISIONS.md](../DECISIONS.md): **A1** allows empty declaration parameter lists,
+[DECISIONS.md](../documents/DECISIONS.md): **A1** allows empty declaration parameter lists,
 **A2** creates writable array/record objects at variable declaration, and **A3**
 returns a value using `return Expression` in a typed routine.
 **A4** defines the `//` comments used for expected results.

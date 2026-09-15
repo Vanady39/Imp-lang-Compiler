@@ -2,7 +2,7 @@
 
 Reviewed on 2026-09-14 against all six pages of
 [Project I.pdf](../documents/Project%20I.pdf), the 15 test sources,
-[README.md](README.md), and [DECISIONS.md](../DECISIONS.md).
+[README.md](README.md), and [DECISIONS.md](../documents/DECISIONS.md).
 
 This is a manual grammar/type/value-flow review, plus a lexer smoke run.
 It is not execution by an implemented compiler or a proof of language conformance.
