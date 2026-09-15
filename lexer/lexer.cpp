@@ -140,17 +140,41 @@ public:
         switch (c)
         {
         case ':':
-            return scanDoubleOrSingleOperator('=', tokenAssign, tokenColon, line, column);
+            if (reader->peek() == '=') {
+                reader->get();
+                return makeToken(tokenAssign, line, column, column + 1);
+            }
+            return makeToken(tokenColon, line, column, column);
         case '.':
-            return scanDoubleOrSingleOperator('.', tokenDotDot, tokenDot, line, column);
+            if (reader->peek() == '.') {
+                reader->get();
+                return makeToken(tokenDotDot, line, column, column + 1);
+            }
+            return makeToken(tokenDot, line, column, column);
         case '=':
-            return scanDoubleOrSingleOperator('>', tokenArrow, tokenEqual, line, column);
+            if (reader->peek() == '>') {
+                reader->get();
+                return makeToken(tokenArrow, line, column, column + 1);
+            }
+            return makeToken(tokenEqual, line, column, column);
         case '<':
-            return scanDoubleOrSingleOperator('=', tokenLessEqual, tokenLess, line, column);
+            if (reader->peek() == '=') {
+                reader->get();
+                return makeToken(tokenLessEqual, line, column, column + 1);
+            }
+            return makeToken(tokenLess, line, column, column);
         case '>':
-            return scanDoubleOrSingleOperator('=', tokenGreaterEqual, tokenGreater, line, column);
+            if (reader->peek() == '=') {
+                reader->get();
+                return makeToken(tokenGreaterEqual, line, column, column + 1);
+            }
+            return makeToken(tokenGreater, line, column, column);
         case '/':
-            return scanDoubleOrSingleOperator('=', tokenNotEqual, tokenSlash, line, column);
+            if (reader->peek() == '=') {
+                reader->get();
+                return makeToken(tokenNotEqual, line, column, column + 1);
+            }
+            return makeToken(tokenSlash, line, column, column);
         case '+':
             return makeToken(tokenPlus, line, column, column);
         case '-':
@@ -175,14 +199,6 @@ public:
             errors.push_back(format("Invalid symbol {} on line {} column {}", c, line, column));
             return makeToken(tokenUnknown, line, column, column);
         }
-    }
-
-    Token scanDoubleOrSingleOperator(char secondChar, TokenCode doubleCode, TokenCode singleCode, int line, int column) {
-        if (reader->peek() == secondChar) {
-            reader->get();
-            return makeToken(doubleCode, line, column, column + 1);
-        }
-        return makeToken(singleCode, line, column, column);
     }
 
     Token makeToken(TokenCode code, int line, int posBegin, int posEnd) {
