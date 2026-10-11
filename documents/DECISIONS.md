@@ -41,6 +41,13 @@ A1-A5 are the assumptions used by the test suite. They should be
 confirmed with the lecturer or TA. Removing them entirely would require changing
 the entry convention or dropping aggregate access / returned-value coverage.
 
+The parser adds the following interpretations of the grammar:
+
+| ID | Interpretation used by the parser | Reason and scope |
+| --- | --- | --- |
+| A6 | Conventional operator priorities: `* / %` bind tighter than `+ -`, so `a + b * c` is parsed as `a + (b * c)`. The parser swaps the operator sets of the p. 6 `Simple` and `Factor` productions: `Simple : Factor { ( + \| - ) Factor }`, `Factor : Summand { ( * \| / \| % ) Summand }`. Arithmetic operators are left-associative. `and`, `or`, `xor` share one level and are left-associative; a `Relation` allows at most one comparison. | p. 6 asks for "conventional priorities", and Lecture 3 (slides 18, 23) gives multiplication the higher priority, but the published `Simple` / `Factor` productions say the opposite. The text and the lecture are followed instead of the literal productions. Test 12 uses parentheses and is unaffected. |
+| A7 | A routine call may be written with empty parentheses, `f()`, in addition to the grammar form `f`. Inside an expression a bare identifier is always parsed as a `ModifiablePrimary`; whether it denotes a variable or a call without arguments is left to semantic analysis. | Mirrors A1 for calls. A bare name cannot be classified without the symbol table. |
+
 ## C. Still open questions
 
 The following gaps are recorded, not resolved by additional team rules.
@@ -51,7 +58,8 @@ The following gaps are recorded, not resolved by additional team rules.
 | Empty parameter list | p. 5 requires a first parameter in `Parameters`; it does not explicitly permit `()` in declarations. | All entries depend on A1; lecturer/TA confirmation remains open. |
 | Comment syntax | No lexical rule for comments is provided. Resolved provisionally by A4, which is a team choice and not an official rule. | Source files annotate expected results with `//` comments. The scanner implements A4. |
 | Array/record allocation | Creation, default initialization, and lifetime are not explicitly defined for these reference types (pp. 2-3). | Tests 05, 08–11, and 14 depend on A2 and explicit member assignments. Nested references are explicitly assigned; test 10 returns caller-owned objects. Default values and escaping locally created objects are not tested. |
-| Operator precedence | p. 6 says conventional priorities, but the `Simple` / `Factor` productions give addition tighter binding than multiplication. Boolean operators also share one grammar level. | Test 12 uses explicit parentheses when combining different operators, avoiding reliance on the disputed priorities. |
+| Operator precedence | p. 6 says conventional priorities, but the `Simple` / `Factor` productions give addition tighter binding than multiplication. Boolean operators also share one grammar level. | Test 12 uses explicit parentheses when combining different operators, avoiding reliance on the disputed priorities. The parser uses conventional priorities (A6). |
+| Unary operators | p. 6 allows a sign only before numeric literals and `not` only before an integer literal, so `-x` and `not flag` are not expressible, although p. 2 lists boolean negation. | Not used by the tests. The parser follows the grammar literally and reports `not true` / `-x` as syntax errors. |
 | Real-to-integer rounding | p. 3 specifies nearest-integer rounding but gives no halfway tie rule. | Test 02 uses `3.7 -> 4`, whose nearest integer is unique. No `floor(x + 0.5)` rule is adopted. |
 | Integer-to-boolean | p. 4 maps 0 to false and 1 to true; other integers are erroneous. It does not prescribe when the error is reported. | Test 12 checks 1 -> true and 0 -> false, then converts back to integer for printing. Invalid integer-to-boolean conversion is not tested. |
 | `/` semantics | p. 6 lists division without a full operand/result type rule, including whether integer operands produce an integer or real result. | No division is used. |
@@ -74,19 +82,19 @@ and aggregate reference copying in tests 08, 10, and 12 now use explicit `:=`,
 so those checks do not require extending assignment conversion rules to typed
 initializers. Basic same-type initializers and type inference still use `is`.
 
-## D. Current build and lexer runner
+## D. Current build and runner
 
-The repository now has a minimal CMake build for the lexer. It builds two
-artifacts:
+The repository has a minimal CMake build with three artifacts:
 
 | Artifact | Source | Purpose |
 | --- | --- | --- |
 | `liblexer.a` | `lexer/lexer.cpp`, `lexer/reader.cpp`, `lexer/token_name_map.cpp` | Static library containing the lexer and reader implementation. |
-| `lexer_build` | `main.cpp` linked with `lexer` | Small runner that reads one source file and prints the tokens produced by the lexer. |
+| `libparser.a` | `parser/parser.cpp` (tree classes in `parser/ast.h`) | Static library containing the syntax analyzer. |
+| `compiler` | `main.cpp` linked with `parser` and `lexer` | Reads one source file and prints its program tree, or the lexical and syntax errors. |
 
-`lexer_build` is only a lexer runner. It does not parse, type-check, execute,
-or compile the test programs. Its output is a token listing with source spans,
-not the program output annotated in the test sources.
+`compiler` currently stops after syntax analysis. It does not type-check,
+execute, or generate code, so its output is the program tree, not the program
+output annotated in the test sources.
 
 Configure and build from the repository root:
 
@@ -95,26 +103,49 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Run the lexer on one test file:
+Run it on one test file:
 
 ```bash
-./build/lexer_build tests/positive/01_variables.txt
+./build/compiler tests/positive/13_forward_recursion.txt
 ```
 
-Run it on all positive test files:
+Run it on all test files:
 
 ```bash
-for f in tests/positive/*.txt; do
+for f in tests/*/*.txt; do
   echo "=== $f ==="
-  ./build/lexer_build "$f"
+  ./build/compiler "$f"
 done
 ```
 
-Run it on the negative test file:
-
-```bash
-./build/lexer_build tests/negative/07_wrong_argument_count.txt
-```
+The negative tests contain semantic errors only, so they are syntactically
+valid and also produce a tree.
 
 If the executable name changes later, update the `add_executable(...)` target in
 `CMakeLists.txt` and use the matching path under `build/`.
+
+## E. Syntax analyzer
+
+The parser is a hand-written top-down recursive descent parser (Lectures 3-4):
+
+- The lexer produces the whole token buffer first; the parser reads it with
+  unlimited lookahead (Lecture 3, "interaction via temporary storage").
+- Each grammar rule has its own parsing function; `{ ... }` repetitions are
+  loops, and left-associative operator chains are built as in Lecture 3,
+  slide 24.
+- The program tree is a class hierarchy (Lecture 4): `Expression`,
+  `Statement`, `TypeNode` and `Declaration` derive from `Node`. The classes
+  hold only data. Processing follows the CCI approach (Lecture 4, slides
+  18-19): every node stores its `NodeType` tag, and each pass (for now, the
+  tree printer in `main.cpp`) is a `switch` over the tag followed by a
+  `static_cast`. The switches have no `default`, so `-Wswitch` (part of
+  `-Wall`) warns when a node kind is not handled. A `Body` keeps declarations
+  and statements in one list because they can be mixed.
+- New lines and `;` separate declarations and statements. Two items on one
+  line without `;` are a syntax error.
+- Errors use panic-mode recovery: the parser reports the error, skips to the
+  next separator, `end` or `else` and continues with the next declaration or
+  statement. Only the first error on each line is reported, and tokens the
+  lexer already rejected are not reported again. A nested `routine` is
+  reported and then parsed completely, so its `end` does not close the
+  enclosing body.
