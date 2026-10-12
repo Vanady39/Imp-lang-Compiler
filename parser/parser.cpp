@@ -43,6 +43,7 @@ class Parser : public IParser {
     size_t position = 0;
     vector<string> errors;
     int lastErrorLine = -1;
+    bool insideTypedRoutine = false;
 
 public:
     Parser(vector<Token> source) : tokens(std::move(source)) {
@@ -202,7 +203,10 @@ private:
         BodyPtr body;
         ExpressionPtr expressionBody;
         if (match(tokenIs)) {
+            bool outerTypedRoutine = insideTypedRoutine;
+            insideTypedRoutine = returnType != nullptr;
             body = parseBody();
+            insideTypedRoutine = outerTypedRoutine;
             expect(tokenEnd);
         } else if (match(tokenArrow)) {
             expressionBody = parseExpression();
@@ -363,6 +367,9 @@ private:
     }
 
     StatementPtr parseReturnStatement() {
+        if (!insideTypedRoutine) {
+            report("Return statement outside a routine with a result type");
+        }
         Token start = expect(tokenReturn);
         ExpressionPtr value = parseExpression();
         return make_unique<ReturnStatement>(start.span, std::move(value));
@@ -478,11 +485,9 @@ private:
     unique_ptr<RoutineCall> parseRoutineCall(const Token& name) {
         expect(tokenLeftParen);
         vector<ExpressionPtr> arguments;
-        if (!check(tokenRightParen)) {
-            do {
-                arguments.push_back(parseExpression());
-            } while (match(tokenComma));
-        }
+        do {
+            arguments.push_back(parseExpression());
+        } while (match(tokenComma));
         expect(tokenRightParen);
         return make_unique<RoutineCall>(name.span, name.ID, std::move(arguments));
     }
