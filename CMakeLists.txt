@@ -17,11 +17,20 @@ target_include_directories(lexer
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_executable(lexer_build
+add_library(parser
+    parser/parser.cpp
+)
+
+target_link_libraries(parser
+    PUBLIC
+        lexer
+)
+
+add_executable(compiler
     main.cpp
 )
 
-target_link_libraries(lexer_build
+target_link_libraries(compiler
     PRIVATE
-        lexer
+        parser
 )
