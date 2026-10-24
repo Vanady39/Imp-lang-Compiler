@@ -68,5 +68,11 @@ vcpkg_installed/
 Testing/
 .cache/
 
+# IDE / editors
+.vscode/
+
+# OpenSpec
+openspec/
+
 .claude/
 compiler
