@@ -1,0 +1,41 @@
+=== exit: 0 ===
+Program
+  TypeDeclaration Point
+    RecordType
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+  RoutineDeclaration test
+    Body
+      VariableDeclaration a
+        Type
+          ArrayType
+            Size
+              IntegerLiteral 2
+            ElementType
+              PrimitiveType integer
+      Assignment
+        Target
+          IndexAccess
+            Name a
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 5
+      PrintStatement
+        IndexAccess
+          Name a
+          Index
+            IntegerLiteral 1
+      VariableDeclaration p
+        Type
+          NamedType Point
+      Assignment
+        Target
+          MemberAccess .x
+            Name p
+        Value
+          IntegerLiteral 7
+      PrintStatement
+        MemberAccess .x
+          Name p

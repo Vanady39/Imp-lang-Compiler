@@ -1,0 +1,78 @@
+=== exit: 0 ===
+Program
+  RoutineDeclaration scan
+    Parameter a
+      ArrayType (sizeless)
+        ElementType
+          PrimitiveType integer
+    Body
+      ForLoop x
+        Array
+          Name a
+        Body
+          PrintStatement
+            Name x
+      ForLoop x (reverse)
+        Array
+          Name a
+        Body
+          PrintStatement
+            Name x
+  RoutineDeclaration test
+    Body
+      VariableDeclaration a
+        Type
+          ArrayType
+            Size
+              IntegerLiteral 2
+            ElementType
+              PrimitiveType integer
+      Assignment
+        Target
+          IndexAccess
+            Name a
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 2
+      Assignment
+        Target
+          IndexAccess
+            Name a
+            Index
+              IntegerLiteral 2
+        Value
+          IntegerLiteral 4
+      CallStatement
+        RoutineCall scan
+          Name a
+      VariableDeclaration upper
+        Initializer
+          IntegerLiteral 2
+      ForLoop i (reverse)
+        From
+          IntegerLiteral 1
+        To
+          Name upper
+        Body
+          PrintStatement
+            Name i
+          Assignment
+            Target
+              Name upper
+            Value
+              IntegerLiteral 0
+      ForLoop i
+        From
+          IntegerLiteral 2
+        To
+          IntegerLiteral 1
+        Body
+          PrintStatement
+            IntegerLiteral 99
+      WhileLoop
+        Condition
+          BooleanLiteral false
+        Body
+          PrintStatement
+            IntegerLiteral 99

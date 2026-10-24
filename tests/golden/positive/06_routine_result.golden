@@ -1,0 +1,17 @@
+=== exit: 0 ===
+Program
+  RoutineDeclaration add1
+    Parameter x
+      PrimitiveType integer
+    ReturnType
+      PrimitiveType integer
+    Body
+      ReturnStatement
+        BinaryExpression +
+          Name x
+          IntegerLiteral 1
+  RoutineDeclaration test
+    Body
+      PrintStatement
+        RoutineCall add1
+          IntegerLiteral 4

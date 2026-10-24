@@ -1,0 +1,126 @@
+=== exit: 0 ===
+Program
+  TypeDeclaration Cell
+    RecordType
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+  TypeDeclaration Numbers
+    ArrayType
+      Size
+        IntegerLiteral 1
+      ElementType
+        PrimitiveType integer
+  RoutineDeclaration update
+    Parameter c
+      NamedType Cell
+    Parameter a
+      NamedType Numbers
+    ReturnType
+      NamedType Cell
+    Body
+      Assignment
+        Target
+          MemberAccess .x
+            Name c
+        Value
+          BinaryExpression +
+            MemberAccess .x
+              Name c
+            IntegerLiteral 1
+      Assignment
+        Target
+          IndexAccess
+            Name a
+            Index
+              IntegerLiteral 1
+        Value
+          BinaryExpression +
+            IndexAccess
+              Name a
+              Index
+                IntegerLiteral 1
+            IntegerLiteral 1
+      ReturnStatement
+        Name c
+  RoutineDeclaration identity
+    Parameter a
+      NamedType Numbers
+    ReturnType
+      NamedType Numbers
+    Body
+      ReturnStatement
+        Name a
+  RoutineDeclaration test
+    Body
+      VariableDeclaration c
+        Type
+          NamedType Cell
+      Assignment
+        Target
+          MemberAccess .x
+            Name c
+        Value
+          IntegerLiteral 1
+      VariableDeclaration a
+        Type
+          NamedType Numbers
+      Assignment
+        Target
+          IndexAccess
+            Name a
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 2
+      VariableDeclaration result
+        Type
+          NamedType Cell
+      Assignment
+        Target
+          Name result
+        Value
+          RoutineCall update
+            Name c
+            Name a
+      PrintStatement
+        MemberAccess .x
+          Name c
+        IndexAccess
+          Name a
+          Index
+            IntegerLiteral 1
+      Assignment
+        Target
+          MemberAccess .x
+            Name result
+        Value
+          IntegerLiteral 7
+      VariableDeclaration alias
+        Type
+          NamedType Numbers
+      Assignment
+        Target
+          Name alias
+        Value
+          RoutineCall identity
+            Name a
+      Assignment
+        Target
+          IndexAccess
+            Name alias
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 8
+      CallStatement
+        RoutineCall update
+          Name c
+          Name a
+      PrintStatement
+        MemberAccess .x
+          Name c
+        IndexAccess
+          Name a
+          Index
+            IntegerLiteral 1

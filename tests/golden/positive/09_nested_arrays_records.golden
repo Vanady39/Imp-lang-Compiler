@@ -1,0 +1,109 @@
+=== exit: 0 ===
+Program
+  TypeDeclaration Numbers
+    ArrayType
+      Size
+        IntegerLiteral 1
+      ElementType
+        PrimitiveType integer
+  TypeDeclaration Row
+    RecordType
+      VariableDeclaration values
+        Type
+          NamedType Numbers
+  TypeDeclaration Rows
+    ArrayType
+      Size
+        IntegerLiteral 1
+      ElementType
+        NamedType Row
+  TypeDeclaration Matrix
+    ArrayType
+      Size
+        IntegerLiteral 1
+      ElementType
+        NamedType Numbers
+  RoutineDeclaration test
+    Body
+      VariableDeclaration a
+        Type
+          NamedType Numbers
+      Assignment
+        Target
+          IndexAccess
+            Name a
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 5
+      VariableDeclaration row
+        Type
+          NamedType Row
+      Assignment
+        Target
+          MemberAccess .values
+            Name row
+        Value
+          Name a
+      VariableDeclaration rows
+        Type
+          NamedType Rows
+      Assignment
+        Target
+          IndexAccess
+            Name rows
+            Index
+              IntegerLiteral 1
+        Value
+          Name row
+      VariableDeclaration matrix
+        Type
+          NamedType Matrix
+      Assignment
+        Target
+          IndexAccess
+            Name matrix
+            Index
+              IntegerLiteral 1
+        Value
+          Name a
+      Assignment
+        Target
+          IndexAccess
+            MemberAccess .values
+              IndexAccess
+                Name rows
+                Index
+                  IntegerLiteral 1
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 7
+      PrintStatement
+        IndexAccess
+          IndexAccess
+            Name matrix
+            Index
+              IntegerLiteral 1
+          Index
+            IntegerLiteral 1
+      Assignment
+        Target
+          IndexAccess
+            IndexAccess
+              Name matrix
+              Index
+                IntegerLiteral 1
+            Index
+              IntegerLiteral 1
+        Value
+          IntegerLiteral 9
+      PrintStatement
+        IndexAccess
+          MemberAccess .values
+            IndexAccess
+              Name rows
+              Index
+                IntegerLiteral 1
+          Index
+            IntegerLiteral 1

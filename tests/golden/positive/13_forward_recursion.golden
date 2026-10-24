@@ -1,0 +1,36 @@
+=== exit: 0 ===
+Program
+  RoutineDeclaration factorial (forward)
+    Parameter n
+      PrimitiveType integer
+    ReturnType
+      PrimitiveType integer
+  RoutineDeclaration test
+    Body
+      PrintStatement
+        RoutineCall factorial
+          IntegerLiteral 3
+  RoutineDeclaration factorial
+    Parameter n
+      PrimitiveType integer
+    ReturnType
+      PrimitiveType integer
+    Body
+      IfStatement
+        Condition
+          BinaryExpression <=
+            Name n
+            IntegerLiteral 1
+        Then
+          Body
+            ReturnStatement
+              IntegerLiteral 1
+        Else
+          Body
+            ReturnStatement
+              BinaryExpression *
+                Name n
+                RoutineCall factorial
+                  BinaryExpression -
+                    Name n
+                    IntegerLiteral 1
