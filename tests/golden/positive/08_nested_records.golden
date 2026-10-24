@@ -1,0 +1,53 @@
+=== exit: 0 ===
+Program
+  TypeDeclaration Point
+    RecordType
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+  TypeDeclaration Box
+    RecordType
+      VariableDeclaration point
+        Type
+          NamedType Point
+  RoutineDeclaration test
+    Body
+      VariableDeclaration p
+        Type
+          NamedType Point
+      Assignment
+        Target
+          MemberAccess .x
+            Name p
+        Value
+          IntegerLiteral 2
+      VariableDeclaration box
+        Type
+          NamedType Box
+      Assignment
+        Target
+          MemberAccess .point
+            Name box
+        Value
+          Name p
+      VariableDeclaration alias
+        Type
+          NamedType Box
+      Assignment
+        Target
+          Name alias
+        Value
+          Name box
+      Assignment
+        Target
+          MemberAccess .x
+            MemberAccess .point
+              Name alias
+        Value
+          IntegerLiteral 7
+      PrintStatement
+        MemberAccess .x
+          MemberAccess .point
+            Name box
+        MemberAccess .x
+          Name p

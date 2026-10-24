@@ -1,0 +1,83 @@
+=== exit: 0 ===
+Program
+  TypeDeclaration Count
+    PrimitiveType integer
+  VariableDeclaration x
+    Type
+      NamedType Count
+    Initializer
+      IntegerLiteral 10
+  RoutineDeclaration local
+    Parameter x
+      NamedType Count
+    Body
+      IfStatement
+        Condition
+          BooleanLiteral false
+        Then
+          Body
+            PrintStatement
+              IntegerLiteral 99
+        Else
+          Body
+            TypeDeclaration Count
+              PrimitiveType boolean
+            VariableDeclaration x
+              Type
+                NamedType Count
+            Assignment
+              Target
+                Name x
+              Value
+                IntegerLiteral 1
+            VariableDeclaration bit
+              Type
+                PrimitiveType integer
+            Assignment
+              Target
+                Name bit
+              Value
+                Name x
+            PrintStatement
+              Name bit
+            Assignment
+              Target
+                Name x
+              Value
+                IntegerLiteral 0
+            Assignment
+              Target
+                Name bit
+              Value
+                Name x
+            PrintStatement
+              Name bit
+      PrintStatement
+        Name x
+  RoutineDeclaration test
+    Body
+      CallStatement
+        RoutineCall local
+          IntegerLiteral 2
+      PrintStatement
+        Name x
+      IfStatement
+        Condition
+          BinaryExpression or
+            BinaryExpression and
+              BooleanLiteral true
+              BooleanLiteral false
+            BinaryExpression xor
+              BooleanLiteral true
+              BooleanLiteral false
+        Then
+          Body
+            PrintStatement
+              BinaryExpression *
+                BinaryExpression +
+                  IntegerLiteral 2
+                  IntegerLiteral 3
+                IntegerLiteral 4
+              BinaryExpression %
+                IntegerLiteral 7
+                IntegerLiteral 3

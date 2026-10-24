@@ -1,0 +1,35 @@
+=== exit: 0 ===
+Program
+  TypeDeclaration Point
+    RecordType
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+  TypeDeclaration OtherPoint
+    RecordType
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+  RoutineDeclaration readPoint
+    Parameter point
+      NamedType Point
+    ReturnType
+      PrimitiveType integer
+    Body
+      ReturnStatement
+        MemberAccess .x
+          Name point
+  RoutineDeclaration test
+    Body
+      VariableDeclaration other
+        Type
+          NamedType OtherPoint
+      Assignment
+        Target
+          MemberAccess .x
+            Name other
+        Value
+          IntegerLiteral 7
+      PrintStatement
+        RoutineCall readPoint
+          Name other

@@ -1,0 +1,32 @@
+=== exit: 0 ===
+Program
+  RoutineDeclaration test
+    Body
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+        Initializer
+          IntegerLiteral 0
+      WhileLoop
+        Condition
+          BinaryExpression <
+            Name x
+            IntegerLiteral 2
+        Body
+          PrintStatement
+            Name x
+          Assignment
+            Target
+              Name x
+            Value
+              BinaryExpression +
+                Name x
+                IntegerLiteral 1
+      ForLoop i
+        From
+          IntegerLiteral 1
+        To
+          IntegerLiteral 3
+        Body
+          PrintStatement
+            Name i

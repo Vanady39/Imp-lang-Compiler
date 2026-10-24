@@ -1,0 +1,14 @@
+=== exit: 0 ===
+Program
+  RoutineDeclaration test
+    Body
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+      Assignment
+        Target
+          Name x
+        Value
+          RealLiteral 3.7
+      PrintStatement
+        Name x

@@ -1,0 +1,15 @@
+=== exit: 0 ===
+Program
+  RoutineDeclaration test
+    Body
+      IfStatement
+        Condition
+          BooleanLiteral true
+        Then
+          Body
+            PrintStatement
+              IntegerLiteral 1
+        Else
+          Body
+            PrintStatement
+              IntegerLiteral 2

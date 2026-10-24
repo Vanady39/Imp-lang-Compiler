@@ -19,6 +19,8 @@ target_include_directories(lexer
 
 add_library(parser
     parser/parser.cpp
+    parser/parser_stmt.cpp
+    parser/parser_expr.cpp
 )
 
 target_link_libraries(parser
@@ -28,6 +30,8 @@ target_link_libraries(parser
 
 add_executable(compiler
     main.cpp
+    runners/runner.cpp
+    runners/ast_printers/ast_printer.cpp
 )
 
 target_link_libraries(compiler
