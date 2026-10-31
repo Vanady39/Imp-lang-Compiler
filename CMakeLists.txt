@@ -38,3 +38,10 @@ target_link_libraries(compiler
     PRIVATE
         parser
 )
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(semantic_base_tests tests/semantic_base.cpp)
+    target_link_libraries(semantic_base_tests PRIVATE parser)
+    add_test(NAME semantic_base COMMAND semantic_base_tests)
+endif()

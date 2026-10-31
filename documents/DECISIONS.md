@@ -48,6 +48,25 @@ The parser adds the following interpretations of the grammar:
 | A6 | Conventional operator priorities: `* / %` bind tighter than `+ -`, so `a + b * c` is parsed as `a + (b * c)`. The parser swaps the operator sets of the p. 6 `Simple` and `Factor` productions: `Simple : Factor { ( + \| - ) Factor }`, `Factor : Summand { ( * \| / \| % ) Summand }`. Arithmetic operators are left-associative. `and`, `or`, `xor` share one level and are left-associative; a `Relation` allows at most one comparison. | p. 6 asks for "conventional priorities", and Lecture 3 (slides 18, 23) gives multiplication the higher priority, but the published `Simple` / `Factor` productions say the opposite. The text and the lecture are followed instead of the literal productions. Test 12 uses parentheses and is unaffected. |
 | A7 | Calls follow the p. 4 `RoutineCall` grammar: a call without arguments is written `f`, and `f()` is a syntax error. Inside an expression a bare identifier is always parsed as a `ModifiablePrimary`; whether it denotes a variable or a call without arguments is left to semantic analysis. As a statement, a bare identifier is a call. | A1 still allows `()` in a declaration, but calls need no matching exception. A bare name cannot be classified without the symbol table. |
 
+### Semantic analyzer interpretations
+
+The analyzer stage needs the interpretations below. Rules already settled by
+section A are used as-is and not repeated here: implicit real-to-integer
+rounding on assignment (test 02), 1-based array indexing, nominal aggregate
+typing (p. 4, cited in A5), and exact argument counts. Declared before use
+(pp. 1-2) stays the rule for variables; for routines A9 refines it.
+
+| ID | Interpretation needed by the analyzer | Reason and scope |
+| --- | --- | --- |
+| A8 | Argument passing at call sites follows the assignment conversion rules of pp. 3-4: an integer argument widens to a real parameter, a real argument is rounded for an integer parameter. Aggregate arguments must originate from the same type declaration, so `Point` and an identically shaped `OtherPoint` are incompatible. | Tests 07 (argument count) and 14 (record mismatch) depend on the call checks. The numeric-argument conversion itself is not exercised by any active test and stays provisional. |
+| A9 | A routine may be declared as a prototype (header without `is ... end`, printed as `(forward)`) and defined later in the same file. The prototype satisfies declare-before-use (pp. 1-2), so `test()` may call `factorial` before its full definition. A routine name must have exactly one definition; a call to a name that is never defined is a semantic error. | Test 13 depends on the prototype on its first line and on the later definition resolving to the same entity. The parser already parses prototypes as body-less `RoutineDeclaration` nodes. |
+| A10 | The numeric for-loop variable is read-only inside the loop body; assigning it is a semantic error. In `for x in a` the loop variable takes the element type of the array. The loop variable is scoped to the loop and is not visible after it. | Test 15 expects a compile error for `i := 0` inside the loop body. |
+
+Open analyzer questions the PDF leaves unresolved remain in section C: mixed
+arithmetic promotion, the `/` operand and result types, integer-to-boolean
+application points, and static array bound checking (indices in the positive
+tests stay within `1 .. size`).
+
 ## C. Still open questions
 
 The following gaps are recorded, not resolved by additional team rules.
