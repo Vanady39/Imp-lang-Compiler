@@ -7,6 +7,68 @@ ExpressionTypeResolver::ExpressionTypeResolver(
     vector<string>& errors
 ) : scopeStack(scopeStack), errors(errors) {}
 
+// ищем поле в описании record
+const VariableDeclaration* ExpressionTypeResolver::findField(
+    const TypeInfo& type,
+    const string& member
+) const {
+    if (type.kind != TypeKind::Record || type.record == nullptr) {
+        return nullptr;
+    }
+
+    const RecordType* record =
+        dynamic_cast<const RecordType*>(type.record->type.get());
+    if (record == nullptr) {
+        return nullptr;
+    }
+
+    for (const auto& field : record->fields) {
+        if (field->name == member) {
+            return field.get();
+        }
+    }
+
+    return nullptr;
+}
+
+// резолвим только примитивные типы полей
+const TypeInfo* ExpressionTypeResolver::resolveType(const TypeNode& type) {
+    switch (type.nodeType) {
+    case NodeType::PrimitiveType: {
+        const PrimitiveType& primitive =
+            static_cast<const PrimitiveType&>(type);
+        if (primitive.kind == tokenInteger) {
+            return &integerType;
+        }
+        if (primitive.kind == tokenReal) {
+            return &realType;
+        }
+        if (primitive.kind == tokenBoolean) {
+            return &booleanType;
+        }
+        return &errorType;
+    }
+    default:
+        return &errorType;
+    }
+}
+
+// получаем тип конкретного поля
+const TypeInfo* ExpressionTypeResolver::resolveFieldType(
+    const VariableDeclaration& field
+) {
+    if (field.type == nullptr) {
+        return &errorType;
+    }
+
+    const TypeInfo* type = resolveType(*field.type);
+    if (type->kind != TypeKind::Error) {
+        return type;
+    }
+
+    return &typeCache.emplace_back(errorType);
+}
+
 const TypeInfo* ExpressionTypeResolver::invalid(
     const Expression& expression,
     const string& message
@@ -18,8 +80,10 @@ const TypeInfo* ExpressionTypeResolver::invalid(
     return &errorType;
 }
 
+// определяем тип переданного выражения
 const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
     switch (expression.nodeType) {
+    // у литералов тип известен сразу
     case NodeType::IntegerLiteral:
         return &integerType;
     case NodeType::RealLiteral:
@@ -27,6 +91,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
     case NodeType::BooleanLiteral:
         return &booleanType;
 
+    // ищем переменную в скоупах и возвращаем ее тип
     case NodeType::NameReference: {
         const NameReference& reference =
             static_cast<const NameReference&>(expression);
@@ -51,6 +116,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         return symbol->type;
     }
 
+    // проверяем тип операнда унарного выражения
     case NodeType::UnaryExpression: {
         const UnaryExpression& unary =
             static_cast<const UnaryExpression&>(expression);
@@ -74,6 +140,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         );
     }
 
+    // проверяем типы левого и правого операнда бинарного выражения
     case NodeType::BinaryExpression: {
         const BinaryExpression& binary =
             static_cast<const BinaryExpression&>(expression);
@@ -85,11 +152,13 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             return &errorType;
         }
 
+        // проверяем что оба типа числовые
         bool numeric =
             (left->kind == TypeKind::Integer || left->kind == TypeKind::Real) &&
             (right->kind == TypeKind::Integer || right->kind == TypeKind::Real);
 
         switch (binary.op) {
+        // арифметические операции работают только с числами
         case tokenPlus:
         case tokenMinus:
         case tokenStar:
@@ -107,6 +176,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             }
             return &integerType;
 
+        // остаток от деления работает только с integer
         case tokenPercent:
             if (left->kind != TypeKind::Integer ||
                 right->kind != TypeKind::Integer) {
@@ -117,6 +187,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             }
             return &integerType;
 
+        // логические операции работают только с boolean
         case tokenAnd:
         case tokenOr:
         case tokenXor:
@@ -130,6 +201,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             }
             return &booleanType;
 
+        // операции сравнения возвращают boolean
         case tokenLess:
         case tokenLessEqual:
         case tokenGreater:
@@ -143,6 +215,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             }
             return &booleanType;
 
+        // равенство можно проверять у одинаковых или числовых типов
         case tokenEqual:
         case tokenNotEqual:
             if (!sameType(*left, *right) && !numeric) {
@@ -162,6 +235,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         }
     }
 
+    // получаем тип результата вызова routine
     case NodeType::RoutineCall: {
         const RoutineCall& call =
             static_cast<const RoutineCall&>(expression);
@@ -179,6 +253,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         return symbol->type;
     }
 
+    // проверяем индексирование массива и возвращаем тип его элемента
     case NodeType::IndexAccess: {
         const IndexAccess& access =
             static_cast<const IndexAccess&>(expression);
@@ -198,11 +273,46 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         return array->element;
     }
 
-    case NodeType::MemberAccess:
-        return invalid(
-            expression,
-            "record member types are not available to the type resolver"
-        );
+    // проверяем доступ к полю record и возвращаем тип поля
+    case NodeType::MemberAccess: {
+        const MemberAccess& access =
+            static_cast<const MemberAccess&>(expression);
+        // сначала получаем тип объекта, у которого запрашиваем поле
+        const TypeInfo* objectType = resolve(*access.object);
+
+        if (objectType->kind == TypeKind::Error) {
+            return &errorType;
+        }
+
+        if (objectType->kind != TypeKind::Record ||
+            objectType->record == nullptr) {
+            return invalid(
+                expression,
+                "member access requires a record expression"
+            );
+        }
+
+        // ищем поле с таким именем в record
+        const VariableDeclaration* field =
+            findField(*objectType, access.member);
+        if (field == nullptr) {
+            return invalid(
+                expression,
+                "record has no field '" + access.member + "'"
+            );
+        }
+
+        // получаем тип найденного поля
+        const TypeInfo* fieldType = resolveFieldType(*field);
+        if (fieldType->kind == TypeKind::Error) {
+            return invalid(
+                expression,
+                "cannot determine the type of field '" + access.member + "'"
+            );
+        }
+
+        return fieldType;
+    }
 
     default:
         return invalid(expression, "cannot determine the type of this expression");
