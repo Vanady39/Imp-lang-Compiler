@@ -94,7 +94,6 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         case tokenMinus:
         case tokenStar:
         case tokenSlash:
-        case tokenPercent:
             if (!numeric) {
                 return invalid(
                     expression,
@@ -105,6 +104,16 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             if (left->kind == TypeKind::Real ||
                 right->kind == TypeKind::Real) {
                 return &realType;
+            }
+            return &integerType;
+
+        case tokenPercent:
+            if (left->kind != TypeKind::Integer ||
+                right->kind != TypeKind::Integer) {
+                return invalid(
+                    expression,
+                    "remainder operator '%' requires integer operands"
+                );
             }
             return &integerType;
 
