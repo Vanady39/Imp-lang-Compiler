@@ -29,6 +29,7 @@ private:
     ) {
         Symbol* symbol = scopeStack.lookup(expression.name);
 
+        // очевидно на что проверк
         if (symbol == nullptr) {
             this->errors.push_back(
                 "Semantic error (line " + to_string(expression.span.lineNum) +
@@ -36,7 +37,7 @@ private:
             );
 
             return false;
-        }
+        };
 
         if (symbol->kind != SymbolKind::Variable &&
             symbol->kind != SymbolKind::Parameter) {
@@ -118,7 +119,7 @@ public:
     ) override {
         Symbol* symbol = scopeStack.lookup(expression.name);
 
-        // есть переменной не существует, то дропаем ошибку 
+        // есть переменной не существует, то дропаем ошибку
         if (symbol == nullptr) {
             this->errors.push_back(
                 "Semantic error (line " + to_string(expression.span.lineNum) +
@@ -128,7 +129,8 @@ public:
         }
 
         // очев
-        if (symbol->kind != SymbolKind::Variable && symbol->kind != SymbolKind::Parameter) {
+        if (symbol->kind != SymbolKind::Variable &&
+            symbol->kind != SymbolKind::Parameter) {
             this->errors.push_back(
                 "Semantic error (line " + to_string(expression.span.lineNum) +
                 "): '" + expression.name +
@@ -207,21 +209,20 @@ public:
             return false;
         }
 
-        if (valueType.kind == TypeKind::Error ||
-            symbol->type->kind == TypeKind::Error) {
+        if (
+            valueType.kind == TypeKind::Error
+            || symbol->type->kind == TypeKind::Error
+        ) {
             return true;
         }
 
         const TypeInfo& targetType = *symbol->type;
 
-        if (sameType(targetType, valueType)) {
-            return true;
-        }
-
-        if ((targetType.kind == TypeKind::Integer &&
-             valueType.kind == TypeKind::Real) ||
-            (targetType.kind == TypeKind::Real &&
-             valueType.kind == TypeKind::Integer)) {
+        if (
+            sameType(targetType, valueType)
+            || (targetType.kind == TypeKind::Integer && valueType.kind == TypeKind::Real)
+            || (targetType.kind == TypeKind::Real && valueType.kind == TypeKind::Integer)
+        ) {
             return true;
         }
 
@@ -234,3 +235,7 @@ public:
         return false;
     }
 };
+
+unique_ptr<ICheckerVariable> makeCheckerVariable(vector<string>& errors) {
+    return make_unique<CheckerVariable>(errors);
+}

@@ -23,6 +23,22 @@ add_library(parser
     parser/parser_expr.cpp
 )
 
+add_library(semantic
+    semantic/semantic-analyzer.cpp
+    semantic/checker/checker.cpp
+    semantic/checker/variable/variables.cpp
+)
+
+target_link_libraries(semantic
+    PRIVATE
+        parser
+)
+
+target_include_directories(semantic
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_link_libraries(parser
     PUBLIC
         lexer
@@ -37,11 +53,12 @@ add_executable(compiler
 target_link_libraries(compiler
     PRIVATE
         parser
+        semantic
 )
 
 include(CTest)
 if(BUILD_TESTING)
     add_executable(semantic_base_tests tests/semantic_base.cpp)
-    target_link_libraries(semantic_base_tests PRIVATE parser)
+    target_link_libraries(semantic_base_tests PRIVATE semantic)
     add_test(NAME semantic_base COMMAND semantic_base_tests)
 endif()

@@ -8,10 +8,10 @@ class Checker : public IChecker {
 private:
     vector<string> errors;
     ScopeStack scopes;
-    CheckerVariable variableChecker;
+    unique_ptr<ICheckerVariable> variableChecker;
 
 public:
-    Checker() : variableChecker(errors) {}
+    Checker() : variableChecker(makeCheckerVariable(errors)) {}
 
     CheckResult check(Program& program) override {
         (void)program;
@@ -27,13 +27,13 @@ public:
         const TypeInfo* type,
         ScopeStack& ScopeStack
     ) {
-        return variableChecker.declareVariable(declaration, type, ScopeStack);
+        return variableChecker->declareVariable(declaration, type, ScopeStack);
     }
 
     TypeInfo checkNameReference(
         const NameReference& expression,
         ScopeStack& scopeStack
     ) {
-        return variableChecker.checkNameReference(expression, scopeStack);
+        return variableChecker->checkNameReference(expression, scopeStack);
     }
 };
