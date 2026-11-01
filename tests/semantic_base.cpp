@@ -1,6 +1,5 @@
 #include "semantic/checker/checker.h"
 #include "semantic/types/common.h"
-#include "shared/types/scope_stack.h"
 
 #include <stdexcept>
 #include <type_traits>
