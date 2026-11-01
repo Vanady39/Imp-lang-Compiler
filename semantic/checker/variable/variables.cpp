@@ -2,10 +2,10 @@
 
 using namespace std;
 
-CheckerVariable::CheckerVariable(vector<string>& errors)
-    : ICheckerVariable(errors) {}
+class CheckerVariable : ICheckerVariable {
+    CheckerVariable(vector<string>& errors) : ICheckerVariable(errors) {}
 
-bool CheckerVariable::declareVariable(
+    bool CheckerVariable::declareVariable(
         const VariableDeclaration& declaration,
         const TypeInfo* type,
         ScopeStack& scopeStack
@@ -51,8 +51,7 @@ bool CheckerVariable::declareVariable(
         return true;
     }
 
-
-TypeInfo CheckerVariable::checkNameReference(
+    TypeInfo CheckerVariable::checkNameReference(
         const NameReference& expression,
         ScopeStack& scopeStack
     ) {
@@ -82,3 +81,4 @@ TypeInfo CheckerVariable::checkNameReference(
 
         return *symbol->type;
     }
+};
