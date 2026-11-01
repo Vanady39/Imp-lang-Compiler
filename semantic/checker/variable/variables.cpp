@@ -2,14 +2,17 @@
 
 using namespace std;
 
-class CheckerVariable : ICheckerVariable {
-    CheckerVariable(vector<string>& errors) : ICheckerVariable(errors) {}
+class CheckerVariable final : public ICheckerVariable {
+public:
+    explicit CheckerVariable(vector<string>& errors)
+        : ICheckerVariable(errors) {}
 
-    bool CheckerVariable::declareVariable(
+    bool declareVariable(
         const VariableDeclaration& declaration,
         const TypeInfo* type,
         ScopeStack& scopeStack
-    ) {
+    ) override {
+        // проверяем что стек не пустой
         if (scopeStack.empty()) {
             this->errors.push_back(
                 "Semantic error (line " +
@@ -20,6 +23,7 @@ class CheckerVariable : ICheckerVariable {
             return false;
         }
 
+        // проверем что в текущем стеке нет сущности с этим именем
         if (scopeStack.currentScopeFind(declaration.name) != nullptr) {
             this->errors.push_back(
                 "Semantic error (line " +
@@ -38,12 +42,12 @@ class CheckerVariable : ICheckerVariable {
             {}
         };
 
+        // деклариурем перемнную. при ошибке кидаем эррор
         if (!scopeStack.declare(symbol)) {
             this->errors.push_back(
                 "Semantic error (line " +
                 to_string(declaration.span.lineNum) +
-                "): failed to declare variable '" + declaration.name +
-                "'"
+                "): failed to declare variable '" + declaration.name + "'"
             );
             return false;
         }
@@ -51,12 +55,13 @@ class CheckerVariable : ICheckerVariable {
         return true;
     }
 
-    TypeInfo CheckerVariable::checkNameReference(
+    TypeInfo checkNameReference(
         const NameReference& expression,
         ScopeStack& scopeStack
-    ) {
+    ) override {
         Symbol* symbol = scopeStack.lookup(expression.name);
 
+        // есть переменной не существует, то дропаем ошибку 
         if (symbol == nullptr) {
             this->errors.push_back(
                 "Semantic error (line " + to_string(expression.span.lineNum) +
@@ -65,8 +70,8 @@ class CheckerVariable : ICheckerVariable {
             return errorType;
         }
 
-        if (symbol->kind != SymbolKind::Variable &&
-            symbol->kind != SymbolKind::Parameter) {
+        // очев
+        if (symbol->kind != SymbolKind::Variable && symbol->kind != SymbolKind::Parameter) {
             this->errors.push_back(
                 "Semantic error (line " + to_string(expression.span.lineNum) +
                 "): '" + expression.name +
@@ -75,10 +80,49 @@ class CheckerVariable : ICheckerVariable {
             return errorType;
         }
 
+        // тоже очевидно
         if (symbol->type == nullptr) {
             return errorType;
         }
 
         return *symbol->type;
+    }
+
+    bool checkAssignmentTarget(
+        const NameReference& expression,
+        ScopeStack& scopeStack
+    ) override {
+        Symbol* symbol = scopeStack.lookup(expression.name);
+
+        // очевидно на что проверк
+        if (symbol == nullptr) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): undeclared name '" + expression.name + "'"
+            );
+
+            return false;
+        };
+
+        if (symbol->kind != SymbolKind::Variable && symbol->kind != SymbolKind::Parameter) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): assignment target '" + expression.name +
+                "' is not a variable or parameter"
+            );
+            return false;
+        }
+
+        // очев
+        if (symbol->readOnly) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): assignment target '" + expression.name +
+                "' is read-only"
+            );
+            return false;
+        }
+
+        return true;
     }
 };

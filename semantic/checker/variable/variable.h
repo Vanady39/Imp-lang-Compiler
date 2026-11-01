@@ -5,6 +5,7 @@
 #include "shared/types/type_info.h"
 #include "semantic/types/scope_stack.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,7 +16,7 @@ protected:
     vector<string>& errors;
 
 public:
-    ICheckerVariable(vector<string>& errors) : errors(errors) {}
+    explicit ICheckerVariable(vector<string>& errors) : errors(errors) {}
     virtual ~ICheckerVariable() = default;
 
     virtual bool declareVariable(
@@ -28,5 +29,13 @@ public:
         const NameReference& expression,
         ScopeStack& scopeStack
     ) = 0;
+
+    virtual bool checkAssignmentTarget(
+        const NameReference& expression,
+        ScopeStack& scopeStack
+    ) = 0;
 };
+
+unique_ptr<ICheckerVariable> makeCheckerVariable(vector<string>& errors);
+
 #endif
