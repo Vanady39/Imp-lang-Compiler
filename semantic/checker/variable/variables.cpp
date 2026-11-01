@@ -145,6 +145,48 @@ public:
         return *symbol->type;
     }
 
+    TypeInfo checkInitializer(
+        const VariableDeclaration& declaration,
+        const TypeInfo* declaredType,
+        const TypeInfo* initializerType
+    ) override {
+        if (declaredType == nullptr && initializerType == nullptr) {
+            this->errors.push_back(
+                "Semantic error (line " +
+                to_string(declaration.span.lineNum) +
+                "): cannot infer type of variable '" + declaration.name + "'"
+            );
+            return errorType;
+        }
+
+        if (initializerType == nullptr) {
+            return *declaredType;
+        }
+
+        if (initializerType->kind == TypeKind::Error) {
+            return errorType;
+        }
+
+        if (declaredType == nullptr) {
+            return *initializerType;
+        }
+
+        if (sameType(*declaredType, *initializerType) 
+            || (declaredType->kind == TypeKind::Integer && initializerType->kind == TypeKind::Real) 
+            || (declaredType->kind == TypeKind::Real && initializerType->kind == TypeKind::Integer)
+        ) {
+            return *declaredType;
+        }
+
+        this->errors.push_back(
+            "Semantic error (line " + to_string(declaration.span.lineNum) +
+            "): cannot initialize variable '" + declaration.name +
+            "' with value of type '" + typeName(*initializerType) +
+            "'; expected type '" + typeName(*declaredType) + "'"
+        );
+        return errorType;
+    }
+
     bool canAssign(
         const NameReference& expression,
         const TypeInfo& valueType,

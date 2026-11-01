@@ -35,6 +35,12 @@ public:
         const TypeInfo& valueType,
         ScopeStack& scopeStack
     ) = 0;
+
+    virtual TypeInfo checkInitializer(
+        const VariableDeclaration& declaration,
+        const TypeInfo* declaredType,
+        const TypeInfo* initializerType
+    ) = 0;
 };
 
 unique_ptr<ICheckerVariable> makeCheckerVariable(vector<string>& errors);
