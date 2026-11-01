@@ -30,11 +30,6 @@ public:
         ScopeStack& scopeStack
     ) = 0;
 
-    virtual bool checkAssignmentTarget(
-        const NameReference& expression,
-        ScopeStack& scopeStack
-    ) = 0;
-
     virtual bool canAssign(
         const NameReference& expression,
         const TypeInfo& valueType,

@@ -22,6 +22,44 @@ static string typeName(const TypeInfo& type) {
 }
 
 class CheckerVariable final : public ICheckerVariable {
+private:
+    bool checkAssignmentTarget(
+        const NameReference& expression,
+        ScopeStack& scopeStack
+    ) {
+        Symbol* symbol = scopeStack.lookup(expression.name);
+
+        if (symbol == nullptr) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): undeclared name '" + expression.name + "'"
+            );
+
+            return false;
+        }
+
+        if (symbol->kind != SymbolKind::Variable &&
+            symbol->kind != SymbolKind::Parameter) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): assignment target '" + expression.name +
+                "' is not a variable or parameter"
+            );
+            return false;
+        }
+
+        if (symbol->readOnly) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): assignment target '" + expression.name +
+                "' is read-only"
+            );
+            return false;
+        }
+
+        return true;
+    }
+
 public:
     explicit CheckerVariable(vector<string>& errors)
         : ICheckerVariable(errors) {}
@@ -107,58 +145,16 @@ public:
         return *symbol->type;
     }
 
-    bool checkAssignmentTarget(
-        const NameReference& expression,
-        ScopeStack& scopeStack
-    ) override {
-        Symbol* symbol = scopeStack.lookup(expression.name);
-
-        // очевидно на что проверк
-        if (symbol == nullptr) {
-            this->errors.push_back(
-                "Semantic error (line " + to_string(expression.span.lineNum) +
-                "): undeclared name '" + expression.name + "'"
-            );
-
-            return false;
-        };
-
-        if (symbol->kind != SymbolKind::Variable && symbol->kind != SymbolKind::Parameter) {
-            this->errors.push_back(
-                "Semantic error (line " + to_string(expression.span.lineNum) +
-                "): assignment target '" + expression.name +
-                "' is not a variable or parameter"
-            );
-            return false;
-        }
-
-        // очев
-        if (symbol->readOnly) {
-            this->errors.push_back(
-                "Semantic error (line " + to_string(expression.span.lineNum) +
-                "): assignment target '" + expression.name +
-                "' is read-only"
-            );
-            return false;
-        }
-
-        return true;
-    }
-
     bool canAssign(
         const NameReference& expression,
         const TypeInfo& valueType,
         ScopeStack& scopeStack
     ) override {
-        Symbol* symbol = scopeStack.lookup(expression.name);
-
-        if (symbol == nullptr) {
-            this->errors.push_back(
-                "Semantic error (line " + to_string(expression.span.lineNum) +
-                "): undeclared name '" + expression.name + "'"
-            );
+        if (!checkAssignmentTarget(expression, scopeStack)) {
             return false;
         }
+
+        Symbol* symbol = scopeStack.lookup(expression.name);
 
         if (symbol->type == nullptr) {
             this->errors.push_back(
@@ -169,14 +165,21 @@ public:
             return false;
         }
 
+        if (valueType.kind == TypeKind::Error ||
+            symbol->type->kind == TypeKind::Error) {
+            return true;
+        }
+
         const TypeInfo& targetType = *symbol->type;
 
-        if (
-            targetType.kind == TypeKind::Integer && valueType.kind == TypeKind::Integer
-            || targetType.kind == TypeKind::Integer && valueType.kind == TypeKind::Real
-            || targetType.kind == TypeKind::Real && valueType.kind == TypeKind::Integer
-            || targetType.kind == TypeKind::Real && valueType.kind == TypeKind::Real
-        ) {
+        if (sameType(targetType, valueType)) {
+            return true;
+        }
+
+        if ((targetType.kind == TypeKind::Integer &&
+             valueType.kind == TypeKind::Real) ||
+            (targetType.kind == TypeKind::Real &&
+             valueType.kind == TypeKind::Integer)) {
             return true;
         }
 
