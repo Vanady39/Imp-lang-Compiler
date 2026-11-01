@@ -24,8 +24,10 @@ add_library(parser
 )
 
 add_library(semantic
+    semantic/common/helpers/expression_type.cpp
     semantic/semantic-analyzer.cpp
     semantic/checker/checker.cpp
+    semantic/checker/for-loop/for.cpp
     semantic/checker/variable/variables.cpp
 )
 
