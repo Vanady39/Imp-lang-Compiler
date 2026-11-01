@@ -34,6 +34,12 @@ public:
         const NameReference& expression,
         ScopeStack& scopeStack
     ) = 0;
+
+    virtual bool canAssign(
+        const NameReference& expression,
+        const TypeInfo& valueType,
+        ScopeStack& scopeStack
+    ) = 0;
 };
 
 unique_ptr<ICheckerVariable> makeCheckerVariable(vector<string>& errors);

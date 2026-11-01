@@ -2,6 +2,25 @@
 
 using namespace std;
 
+static string typeName(const TypeInfo& type) {
+    switch (type.kind) {
+    case TypeKind::Integer:
+        return "integer";
+    case TypeKind::Real:
+        return "real";
+    case TypeKind::Boolean:
+        return "boolean";
+    case TypeKind::Record:
+        return "record";
+    case TypeKind::Array:
+        return "array";
+    case TypeKind::Error:
+        return "error";
+    }
+
+    return "unknown";
+}
+
 class CheckerVariable final : public ICheckerVariable {
 public:
     explicit CheckerVariable(vector<string>& errors)
@@ -124,5 +143,49 @@ public:
         }
 
         return true;
+    }
+
+    bool canAssign(
+        const NameReference& expression,
+        const TypeInfo& valueType,
+        ScopeStack& scopeStack
+    ) override {
+        Symbol* symbol = scopeStack.lookup(expression.name);
+
+        if (symbol == nullptr) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): undeclared name '" + expression.name + "'"
+            );
+            return false;
+        }
+
+        if (symbol->type == nullptr) {
+            this->errors.push_back(
+                "Semantic error (line " + to_string(expression.span.lineNum) +
+                "): cannot determine the type of assignment target '" +
+                expression.name + "'"
+            );
+            return false;
+        }
+
+        const TypeInfo& targetType = *symbol->type;
+
+        if (
+            targetType.kind == TypeKind::Integer && valueType.kind == TypeKind::Integer
+            || targetType.kind == TypeKind::Integer && valueType.kind == TypeKind::Real
+            || targetType.kind == TypeKind::Real && valueType.kind == TypeKind::Integer
+            || targetType.kind == TypeKind::Real && valueType.kind == TypeKind::Real
+        ) {
+            return true;
+        }
+
+        this->errors.push_back(
+            "Semantic error (line " + to_string(expression.span.lineNum) +
+            "): cannot assign value of type '" + typeName(valueType) +
+            "' to target of type '" + typeName(targetType) + "'"
+        );
+
+        return false;
     }
 };

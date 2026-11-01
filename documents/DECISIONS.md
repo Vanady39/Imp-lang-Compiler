@@ -101,6 +101,67 @@ and aggregate reference copying in tests 08, 10, and 12 now use explicit `:=`,
 so those checks do not require extending assignment conversion rules to typed
 initializers. Basic same-type initializers and type inference still use `is`.
 
+## F. Semantic checker implementation workflow
+
+The semantic checker is implemented incrementally as a collection of checks that
+will later be called by the AST traversal. Each check should be completed and
+verified independently before implementing the traversal that combines them.
+
+The implementation style for this part of the project follows the current
+checker code:
+
+- Keep the concrete checker class in its `.cpp` file when it is an implementation detail.
+- Keep the public interface in the header and expose construction through a factory when needed.
+- Keep method bodies close to the class declaration in the `.cpp` file.
+- Use the existing `vector<string>& errors` collection and the existing message format:
+  `Semantic error (line N): <message>`.
+- Return a boolean for checks that answer whether an operation is allowed.
+- Return `errorType` from type-producing checks after recording an error.
+- Keep checks read-only with respect to runtime values. Semantic analysis validates assignments; execution or code generation performs the value write.
+- Add checks first as reusable methods. Connect them to AST traversal only after the method-level behavior is settled.
+
+### Current semantic-checker checkpoint
+
+Completed method-level checks:
+
+- variable declaration requires an active scope;
+- duplicate variable names in the current scope are rejected;
+- name references resolve variables and parameters through nested scopes;
+- assignment to an undeclared, non-variable, non-parameter, or read-only name is rejected.
+
+These checks are not yet integrated into an AST traversal.
+
+### Recommended next check: assignment value compatibility
+
+Implement the check for the right-hand side of a simple assignment after the
+assignment target check. It should answer whether a value of one `TypeInfo` can
+be assigned to a target of another `TypeInfo`.
+
+The method should perform these steps:
+
+1. If either type is `errorType`, return success without adding a second derived error.
+2. Accept values whose types are exactly compatible.
+3. Accept `integer` assigned to `real`.
+4. Accept `real` assigned to `integer`; the later execution/code-generation stage performs rounding.
+5. Apply nominal compatibility to records: two record types are compatible only when their `TypeDeclaration` identity is the same.
+6. Apply element-type compatibility to arrays according to A5; a sized array may be passed to a sizeless array parameter, while array sizes are checked separately.
+7. Reject all remaining combinations.
+
+Suggested error text:
+
+`Semantic error (line N): cannot assign value of type '<actual>' to '<target>'`
+
+The check should receive the assignment source span so the error points to the
+assignment value or the assignment statement consistently. It should not mutate
+the symbol table or any runtime value.
+
+After that check, implement the same compatibility rule for variable
+initializers. The initializer check must additionally handle type inference:
+`var x is expression` obtains its type from the expression, while `var x`
+without an explicit type or initializer reports:
+
+`Semantic error (line N): cannot infer type of variable 'x'`
+
 ## D. Current build and runner
 
 The repository has a minimal CMake build with three artifacts:

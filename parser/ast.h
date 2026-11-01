@@ -108,8 +108,7 @@ class NameReference : public Expression {
 public:
     string name;
 
-    NameReference(Span span, string name)
-        : Expression(NodeType::NameReference, span), name(name) {}
+    NameReference(Span span, string name) : Expression(NodeType::NameReference, span), name(name) {}
 };
 
 class MemberAccess : public Expression {
