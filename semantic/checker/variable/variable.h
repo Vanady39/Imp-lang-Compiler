@@ -29,21 +29,4 @@ public:
         ScopeStack& scopeStack
     ) = 0;
 };
-
-class CheckerVariable : public ICheckerVariable {
-public:
-    explicit CheckerVariable(vector<string>& errors);
-
-    bool declareVariable(
-        const VariableDeclaration& declaration,
-        const TypeInfo* type,
-        ScopeStack& scopeStack
-    ) override;
-
-    TypeInfo checkNameReference(
-        const NameReference& expression,
-        ScopeStack& scopeStack
-    ) override;
-};
-
 #endif
