@@ -4,7 +4,7 @@ using namespace std;
 
 class AstTraversal final : public IAstTraversal {
 private:
-    ScopeStack scopes;
+    ScopeStack& scopes;
     IAstTraversalObserver* observer = nullptr;
 
     void enterNode(const Node& node) {
@@ -15,30 +15,22 @@ private:
         observer->leave(node, scopes);
     }
 
+    void enterScope(const Node& node) {
+        scopes.push();
+        observer->enterScope(node, scopes);
+    }
+
+    void leaveScope(const Node& node) {
+        observer->leaveScope(node, scopes);
+        scopes.pop();
+    }
+
     void traverseExpression(const Expression& expression) {
         switch (expression.nodeType) {
         case NodeType::IntegerLiteral:
         case NodeType::RealLiteral:
         case NodeType::BooleanLiteral:
         case NodeType::NameReference:
-            break;
-        case NodeType::PrimitiveType:
-        case NodeType::NamedType:
-        case NodeType::ArrayType:
-        case NodeType::RecordType:
-        case NodeType::VariableDeclaration:
-        case NodeType::TypeDeclaration:
-        case NodeType::ParameterDeclaration:
-        case NodeType::RoutineDeclaration:
-        case NodeType::Body:
-        case NodeType::Assignment:
-        case NodeType::CallStatement:
-        case NodeType::WhileLoop:
-        case NodeType::ForLoop:
-        case NodeType::IfStatement:
-        case NodeType::PrintStatement:
-        case NodeType::ReturnStatement:
-        case NodeType::Program:
             break;
         case NodeType::UnaryExpression: {
             const UnaryExpression& unary = static_cast<const UnaryExpression&>(expression);
@@ -69,6 +61,24 @@ private:
             }
             break;
         }
+        case NodeType::PrimitiveType:
+        case NodeType::NamedType:
+        case NodeType::ArrayType:
+        case NodeType::RecordType:
+        case NodeType::VariableDeclaration:
+        case NodeType::TypeDeclaration:
+        case NodeType::ParameterDeclaration:
+        case NodeType::RoutineDeclaration:
+        case NodeType::Body:
+        case NodeType::Assignment:
+        case NodeType::CallStatement:
+        case NodeType::WhileLoop:
+        case NodeType::ForLoop:
+        case NodeType::IfStatement:
+        case NodeType::PrintStatement:
+        case NodeType::ReturnStatement:
+        case NodeType::Program:
+            break;
         }
     }
 
@@ -134,6 +144,16 @@ private:
             traverseNode(parameter.type.get());
             break;
         }
+        case NodeType::RoutineDeclaration: {
+            const RoutineDeclaration& routine = static_cast<const RoutineDeclaration&>(declaration);
+            for (const auto& parameter : routine.parameters) {
+                traverseNode(parameter.get());
+            }
+            traverseNode(routine.returnType.get());
+            traverseNode(routine.body.get());
+            traverseNode(routine.expressionBody.get());
+            break;
+        }
         case NodeType::IntegerLiteral:
         case NodeType::RealLiteral:
         case NodeType::BooleanLiteral:
@@ -157,27 +177,18 @@ private:
         case NodeType::ReturnStatement:
         case NodeType::Program:
             break;
-        case NodeType::RoutineDeclaration: {
-            const RoutineDeclaration& routine = static_cast<const RoutineDeclaration&>(declaration);
-            for (const auto& parameter : routine.parameters) {
-                traverseNode(parameter.get());
-            }
-            traverseNode(routine.returnType.get());
-            traverseNode(routine.body.get());
-            traverseNode(routine.expressionBody.get());
-            return;
-        }
         }
     }
 
     void traverseBody(const Body& body) {
-        scopes.push();
+        // Любой body отделяет локальные имена от внешнего блока.
+        enterScope(body);
         enterNode(body);
         for (const auto& item : body.items) {
             traverseNode(item.get());
         }
         leaveNode(body);
-        scopes.pop();
+        leaveScope(body);
     }
 
     void traverseStatement(const Statement& statement) {
@@ -203,8 +214,9 @@ private:
             const ForLoop& loop = static_cast<const ForLoop&>(statement);
             traverseNode(loop.rangeStart.get());
             traverseNode(loop.rangeEnd.get());
+            // Loop scope охватывает переменную цикла и его body.
             traverseNode(loop.body.get());
-            return;
+            break;
         }
         case NodeType::IfStatement: {
             const IfStatement& statementNode = static_cast<const IfStatement&>(statement);
@@ -255,6 +267,7 @@ private:
 
         if (node->nodeType == NodeType::Program) {
             const Program& program = static_cast<const Program&>(*node);
+            // Глобальная область доступна всем верхнеуровневым декларациям.
             scopes.push();
             enterNode(program);
             for (const auto& declaration : program.declarations) {
@@ -270,11 +283,13 @@ private:
             return;
         }
 
+        // Сначала проверяется сама конструкция во внешней области.
+        enterNode(*node);
         if (node->nodeType == NodeType::RoutineDeclaration ||
             node->nodeType == NodeType::ForLoop) {
-            scopes.push();
+            // Локальная область нужна только для дочерних узлов.
+            enterScope(*node);
         }
-        enterNode(*node);
         switch (node->nodeType) {
         case NodeType::IntegerLiteral:
         case NodeType::RealLiteral:
@@ -315,11 +330,13 @@ private:
         leaveNode(*node);
         if (node->nodeType == NodeType::RoutineDeclaration ||
             node->nodeType == NodeType::ForLoop) {
-            scopes.pop();
+            leaveScope(*node);
         }
     }
 
 public:
+    explicit AstTraversal(ScopeStack& scopes) : scopes(scopes) {}
+
     void traverse(
         const Program& program,
         IAstTraversalObserver& traversalObserver
@@ -334,6 +351,6 @@ public:
     }
 };
 
-unique_ptr<IAstTraversal> makeAstTraversal() {
-    return make_unique<AstTraversal>();
+unique_ptr<IAstTraversal> makeAstTraversal(ScopeStack& scopes) {
+    return make_unique<AstTraversal>(scopes);
 }

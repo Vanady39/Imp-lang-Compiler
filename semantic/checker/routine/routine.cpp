@@ -194,16 +194,6 @@ public:
             return false;
         }
 
-        if (!routine->hasDefinition) {
-            this->errors.push_back(
-                "Semantic error (line " +
-                to_string(routineCall.span.lineNum) +
-                "): routine '" + routineCall.name +
-                "' has no definition"
-            );
-            return false;
-        }
-
         if (routine->parameterTypes.size() != argumentTypes.size()) {
             this->errors.push_back(
                 "Semantic error (line " +

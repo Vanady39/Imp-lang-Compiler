@@ -3,6 +3,7 @@
 #include "runners/ast_printers/ast_printer.h"
 #include "lexer/lexer.h"
 #include "parser/parser.h"
+#include "semantic/checker/checker.h"
 
 #include <fstream>
 #include <iostream>
@@ -43,6 +44,17 @@ int runSourceFile(const string& path) {
     }
 
     if (lexerErrors.size() > 0 || parserErrors.size() > 0) {
+        return 1;
+    }
+
+    unique_ptr<IChecker> checker = makeChecker();
+    checker->check(*program);
+    const vector<string>& semanticErrors = checker->get_errors();
+    for (size_t i = 0; i < semanticErrors.size(); i++) {
+        cout << semanticErrors[i] << endl;
+    }
+
+    if (!semanticErrors.empty()) {
         return 1;
     }
 

@@ -4,6 +4,7 @@
 #include "parser/ast.h"
 #include "shared/types/type_info.h"
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -20,5 +21,7 @@ public:
     virtual CheckResult check(Program& program) = 0;
     virtual const vector<string>& get_errors() const = 0;
 };
+
+unique_ptr<IChecker> makeChecker();
 
 #endif

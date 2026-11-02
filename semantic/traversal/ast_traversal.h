@@ -12,8 +12,22 @@ class IAstTraversalObserver {
 public:
     virtual ~IAstTraversalObserver() = default;
 
-    virtual void enter(const Node& node, const ScopeStack& scopes) = 0;
-    virtual void leave(const Node& node, const ScopeStack& scopes) = 0;
+    // Событие вызывается в текущей внешней области видимости узла.
+    virtual void enter(const Node& node, ScopeStack& scopes) = 0;
+
+    // Событие вызывается после обхода всех дочерних узлов.
+    virtual void leave(const Node& node, ScopeStack& scopes) = 0;
+
+    // События обозначают время жизни специальной области конструкции.
+    virtual void enterScope(const Node& node, ScopeStack& scopes) {
+        (void)node;
+        (void)scopes;
+    }
+
+    virtual void leaveScope(const Node& node, ScopeStack& scopes) {
+        (void)node;
+        (void)scopes;
+    }
 };
 
 class IAstTraversal {
@@ -28,6 +42,6 @@ public:
     virtual const ScopeStack& get_scopes() const = 0;
 };
 
-unique_ptr<IAstTraversal> makeAstTraversal();
+unique_ptr<IAstTraversal> makeAstTraversal(ScopeStack& scopes);
 
 #endif

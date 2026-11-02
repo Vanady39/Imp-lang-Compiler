@@ -214,6 +214,14 @@ public:
 
         const TypeInfo& targetType = *symbol->type;
 
+        if ((targetType.kind == TypeKind::Boolean &&
+             valueType.kind == TypeKind::Integer) ||
+            (targetType.kind == TypeKind::Integer &&
+             valueType.kind == TypeKind::Boolean)) {
+            // Язык разрешает преобразование 0/1 между integer и boolean.
+            return true;
+        }
+
         if (areCompatible(targetType, valueType)) {
             return true;
         }

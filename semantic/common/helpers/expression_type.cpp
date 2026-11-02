@@ -348,10 +348,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
             return invalid(expression, "'" + call.name + "' is not a routine");
         }
         if (symbol->type == nullptr) {
-            return invalid(
-                expression,
-                "routine '" + call.name + "' has no result type"
-            );
+            return &errorType;
         }
         return symbol->type;
     }
