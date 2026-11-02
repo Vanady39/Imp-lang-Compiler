@@ -1,11 +1,50 @@
 #include "semantic/common/helpers/expression_type.h"
 
+#include <list>
+
 using namespace std;
+
+class ExpressionTypeResolver final : public IExpressionTypeResolver {
+private:
+    ScopeStack& scopeStack;
+    list<TypeInfo> typeCache;
+
+    const TypeInfo* invalid(
+        const Node& node,
+        const string& message
+    );
+
+    const VariableDeclaration* findField(
+        const TypeInfo& type,
+        const string& member
+    ) const;
+
+    const TypeInfo* resolvePrimitiveType(const PrimitiveType& type);
+    const TypeInfo* resolveNamedType(const NamedType& type);
+    const TypeInfo* resolveArrayType(const ArrayType& type);
+    const TypeInfo* resolveRecordType(
+        const RecordType& type,
+        const TypeDeclaration* declaration
+    );
+    const TypeInfo* resolveType(
+        const TypeNode& type,
+        const TypeDeclaration* declaration = nullptr
+    ) override;
+    const TypeInfo* resolveFieldType(const VariableDeclaration& field);
+
+public:
+    ExpressionTypeResolver(
+        ScopeStack& scopeStack,
+        vector<string>& errors
+    );
+
+    const TypeInfo* resolve(const Expression& expression) override;
+};
 
 ExpressionTypeResolver::ExpressionTypeResolver(
     ScopeStack& scopeStack,
     vector<string>& errors
-) : scopeStack(scopeStack), errors(errors) {}
+) : IExpressionTypeResolver(errors), scopeStack(scopeStack) {}
 
 // ищем поле в описании record
 const VariableDeclaration* ExpressionTypeResolver::findField(
@@ -138,6 +177,13 @@ const TypeInfo* ExpressionTypeResolver::invalid(
 }
 
 // определяем тип переданного выражения
+unique_ptr<IExpressionTypeResolver> makeExpressionTypeResolver(
+    ScopeStack& scopeStack,
+    vector<string>& errors
+) {
+    return make_unique<ExpressionTypeResolver>(scopeStack, errors);
+}
+
 const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
     switch (expression.nodeType) {
     // у литералов тип известен сразу

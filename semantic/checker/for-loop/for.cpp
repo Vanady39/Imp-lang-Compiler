@@ -55,8 +55,9 @@ public:
             return false;
         }
 
-        ExpressionTypeResolver resolver(scopeStack, errors);
-        const TypeInfo* startType = resolver.resolve(*forLoop.rangeStart);
+        unique_ptr<IExpressionTypeResolver> resolver =
+            makeExpressionTypeResolver(scopeStack, errors);
+        const TypeInfo* startType = resolver->resolve(*forLoop.rangeStart);
         if (startType->kind == TypeKind::Error) {
             return false;
         }
@@ -77,7 +78,7 @@ public:
             return false;
         }
 
-        const TypeInfo* endType = resolver.resolve(*forLoop.rangeEnd);
+        const TypeInfo* endType = resolver->resolve(*forLoop.rangeEnd);
         if (endType->kind == TypeKind::Error) {
             return false;
         }
@@ -149,8 +150,9 @@ public:
             return false;
         }
 
-        ExpressionTypeResolver resolver(scopeStack, errors);
-        const TypeInfo* sourceType = resolver.resolve(*forLoop.rangeStart);
+        unique_ptr<IExpressionTypeResolver> resolver =
+            makeExpressionTypeResolver(scopeStack, errors);
+        const TypeInfo* sourceType = resolver->resolve(*forLoop.rangeStart);
         if (sourceType->kind == TypeKind::Error) {
             return false;
         }
