@@ -18,10 +18,16 @@ public:
     explicit ICheckerRoutine(vector<string>& errors) : errors(errors) {}
     virtual ~ICheckerRoutine() = default;
 
-    virtual bool declareRoutine(
+    virtual bool checkDeclareRoutine(
         const RoutineDeclaration& declaration,
         const vector<const TypeInfo*>& parameterTypes,
         const TypeInfo* returnType,
+        ScopeStack& scopeStack
+    ) = 0;
+
+    virtual bool checkCallRoutine(
+        const RoutineCall& routineDeclaration,
+        const vector<const TypeInfo*>& argumentTypes,
         ScopeStack& scopeStack
     ) = 0;
 };

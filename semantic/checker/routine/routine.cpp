@@ -61,10 +61,26 @@ private:
         return true;
     }
 
+    // по названию и так очевидно
+    bool areCompatible(
+        const TypeInfo& targetType,
+        const TypeInfo& valueType
+    ) const {
+        if (targetType.kind == TypeKind::Error || valueType.kind == TypeKind::Error) {
+            return true;
+        }
+
+        return sameType(targetType, valueType) ||
+            (targetType.kind == TypeKind::Integer &&
+             valueType.kind == TypeKind::Real) ||
+            (targetType.kind == TypeKind::Real &&
+             valueType.kind == TypeKind::Integer);
+    }
+
 public:
     explicit CheckerRoutine(vector<string>& errors) : ICheckerRoutine(errors) {}
 
-    bool declareRoutine(
+    bool checkDeclareRoutine(
         const RoutineDeclaration& declaration,
         const vector<const TypeInfo*>& parameterTypes,
         const TypeInfo* returnType,
@@ -165,6 +181,83 @@ public:
             isDefinition(declaration);
         return true;
     }
+
+    virtual bool checkCallRoutine(
+        const RoutineCall& routineCall,
+        const vector<const TypeInfo*>& argumentTypes,
+        ScopeStack& scopeStack
+    ) override {
+        Symbol* routine = scopeStack.lookup(routineCall.name);
+        if (routine == nullptr) {
+            this->errors.push_back(
+                "Semantic error (line " +
+                to_string(routineCall.span.lineNum) +
+                "): undeclared routine '" + routineCall.name + "'"
+            );
+            return false;
+        }
+
+        if (routine->kind != SymbolKind::Routine) {
+            this->errors.push_back(
+                "Semantic error (line " +
+                to_string(routineCall.span.lineNum) +
+                "): '" + routineCall.name + "' is not a routine"
+            );
+            return false;
+        }
+
+        if (!routine->hasDefinition) {
+            this->errors.push_back(
+                "Semantic error (line " +
+                to_string(routineCall.span.lineNum) +
+                "): routine '" + routineCall.name +
+                "' has no definition"
+            );
+            return false;
+        }
+
+        if (routine->parameterTypes.size() != argumentTypes.size()) {
+            this->errors.push_back(
+                "Semantic error (line " +
+                to_string(routineCall.span.lineNum) +
+                "): routine '" + routineCall.name +
+                "' expects " + to_string(routine->parameterTypes.size()) +
+                " argument(s), but " + to_string(argumentTypes.size()) +
+                " provided"
+            );
+            return false;
+        }
+
+        for (size_t i = 0; i < argumentTypes.size(); i++) {
+            if (routine->parameterTypes[i] == nullptr ||
+                argumentTypes[i] == nullptr) {
+                this->errors.push_back(
+                    "Semantic error (line " +
+                    to_string(routineCall.span.lineNum) +
+                    "): cannot determine type of argument " +
+                    to_string(i + 1) + " in call to routine '" +
+                    routineCall.name + "'"
+                );
+                return false;
+            }
+
+            if (!areCompatible(
+                    *routine->parameterTypes[i],
+                    *argumentTypes[i]
+                )) {
+                this->errors.push_back(
+                    "Semantic error (line " +
+                    to_string(routineCall.span.lineNum) +
+                    "): argument " + to_string(i + 1) +
+                    " of routine '" + routineCall.name +
+                    "' has incompatible type"
+                );
+                return false;
+            }
+        }
+
+        return true;
+    };
 };
 
 unique_ptr<ICheckerRoutine> makeCheckerRoutine(vector<string>& errors) {
