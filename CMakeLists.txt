@@ -31,6 +31,7 @@ add_library(semantic
     semantic/checker/for-loop/for.cpp
     semantic/checker/routine/routine.cpp
     semantic/checker/variable/variables.cpp
+    semantic/checker/while/while.cpp
 )
 
 target_link_libraries(semantic
