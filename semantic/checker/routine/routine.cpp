@@ -126,17 +126,9 @@ public:
         // Проверяем текущую область: внешнее имя можно затенить.
         Symbol* symbol = scopeStack.currentScopeFind(declaration.name);
         if (symbol == nullptr) {
-            Symbol routine{
-                declaration.name,
-                SymbolKind::Routine,
-                declaration.span,
-                returnType,
-                false,
-                {const_cast<RoutineDeclaration*>(&declaration)},
-                parameterTypes,
-                isDefinition(declaration)
-            };
-            return scopeStack.declare(routine);
+            // Сам runner зарегистрирует routine после прохождения проверки.
+            // Здесь проверяем только отсутствие конфликта в текущем scope.
+            return true;
         }
 
         if (symbol->kind != SymbolKind::Routine) {
@@ -174,11 +166,7 @@ public:
             return false;
         }
 
-        symbol->routineDeclarations.push_back(
-            const_cast<RoutineDeclaration*>(&declaration)
-        );
-        symbol->hasDefinition = symbol->hasDefinition ||
-            isDefinition(declaration);
+        // Состояние prototype/definition обновит runner при регистрации declaration.
         return true;
     }
 

@@ -91,24 +91,8 @@ public:
             return false;
         }
 
-        Symbol loopVariable{
-            forLoop.variable,
-            SymbolKind::Variable,
-            forLoop.span,
-            &integerType,
-            true,
-            {}
-        };
-
-        if (!scopeStack.declare(loopVariable)) {
-            errors.push_back(
-                "Semantic error (line " + to_string(forLoop.span.lineNum) +
-                "): failed to declare loop variable '" +
-                forLoop.variable + "'"
-            );
-            return false;
-        }
-
+        // Runner добавит loop variable в scope на время обхода тела цикла.
+        // Atomic checker только проверяет тип и конфликт имени.
         return true;
     }
 
@@ -166,24 +150,8 @@ public:
             return false;
         }
 
-        Symbol loopVariable{
-            forLoop.variable,
-            SymbolKind::Variable,
-            forLoop.span,
-            sourceType->element,
-            true,
-            {}
-        };
-
-        if (!scopeStack.declare(loopVariable)) {
-            errors.push_back(
-                "Semantic error (line " + to_string(forLoop.span.lineNum) +
-                "): failed to declare loop variable '" +
-                forLoop.variable + "'"
-            );
-            return false;
-        }
-
+        // Runner добавит loop variable в scope на время обхода тела цикла.
+        // Atomic checker только проверяет тип и конфликт имени.
         return true;
     }
 };

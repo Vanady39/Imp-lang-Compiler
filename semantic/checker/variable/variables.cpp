@@ -91,25 +91,8 @@ public:
             return false;
         }
 
-        Symbol symbol{
-            declaration.name,
-            SymbolKind::Variable,
-            declaration.span,
-            type,
-            false,
-            {}
-        };
-
-        // деклариурем перемнную. при ошибке кидаем эррор
-        if (!scopeStack.declare(symbol)) {
-            this->errors.push_back(
-                "Semantic error (line " +
-                to_string(declaration.span.lineNum) +
-                "): failed to declare variable '" + declaration.name + "'"
-            );
-            return false;
-        }
-
+        // Саму переменную добавляет runner во время обхода AST.
+        // Atomic checker только проверяет конфликт в текущем scope.
         return true;
     }
 
