@@ -16,7 +16,7 @@ private:
     list<TypeInfo> typeCache;
 
     const TypeInfo* invalid(
-        const Expression& expression,
+        const Node& node,
         const string& message
     );
 
@@ -25,7 +25,17 @@ private:
         const string& member
     ) const;
 
-    const TypeInfo* resolveType(const TypeNode& type);
+    const TypeInfo* resolvePrimitiveType(const PrimitiveType& type);
+    const TypeInfo* resolveNamedType(const NamedType& type);
+    const TypeInfo* resolveArrayType(const ArrayType& type);
+    const TypeInfo* resolveRecordType(
+        const RecordType& type,
+        const TypeDeclaration* declaration
+    );
+    const TypeInfo* resolveType(
+        const TypeNode& type,
+        const TypeDeclaration* declaration = nullptr
+    );
     const TypeInfo* resolveFieldType(const VariableDeclaration& field);
 
 public:

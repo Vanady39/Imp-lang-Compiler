@@ -16,8 +16,15 @@ const VariableDeclaration* ExpressionTypeResolver::findField(
         return nullptr;
     }
 
-    const RecordType* record =
-        dynamic_cast<const RecordType*>(type.record->type.get());
+    const RecordType* record = nullptr;
+    if (type.record->nodeType == NodeType::TypeDeclaration) {
+        const TypeDeclaration* declaration =
+            static_cast<const TypeDeclaration*>(type.record);
+        record = dynamic_cast<const RecordType*>(declaration->type.get());
+    } else if (type.record->nodeType == NodeType::RecordType) {
+        record = static_cast<const RecordType*>(type.record);
+    }
+
     if (record == nullptr) {
         return nullptr;
     }
@@ -31,23 +38,78 @@ const VariableDeclaration* ExpressionTypeResolver::findField(
     return nullptr;
 }
 
-// резолвим только примитивные типы полей
-const TypeInfo* ExpressionTypeResolver::resolveType(const TypeNode& type) {
-    switch (type.nodeType) {
-    case NodeType::PrimitiveType: {
-        const PrimitiveType& primitive =
-            static_cast<const PrimitiveType&>(type);
-        if (primitive.kind == tokenInteger) {
-            return &integerType;
-        }
-        if (primitive.kind == tokenReal) {
-            return &realType;
-        }
-        if (primitive.kind == tokenBoolean) {
-            return &booleanType;
-        }
+const TypeInfo* ExpressionTypeResolver::resolvePrimitiveType(
+    const PrimitiveType& type
+) {
+    switch (type.kind) {
+    case tokenInteger:
+        return &integerType;
+    case tokenReal:
+        return &realType;
+    case tokenBoolean:
+        return &booleanType;
+    default:
         return &errorType;
     }
+}
+
+const TypeInfo* ExpressionTypeResolver::resolveNamedType(
+    const NamedType& type
+) {
+    Symbol* symbol = scopeStack.lookup(type.name);
+    if (symbol == nullptr) {
+        return invalid(type, "undeclared type '" + type.name + "'");
+    }
+
+    if (symbol->kind != SymbolKind::Type || symbol->type == nullptr) {
+        return invalid(type, "'" + type.name + "' is not a type");
+    }
+
+    return symbol->type;
+}
+
+const TypeInfo* ExpressionTypeResolver::resolveArrayType(
+    const ArrayType& type
+) {
+    if (type.elementType == nullptr) {
+        return &errorType;
+    }
+
+    const TypeInfo* elementType = resolveType(*type.elementType);
+    if (elementType->kind == TypeKind::Error) {
+        return &errorType;
+    }
+
+    return &typeCache.emplace_back(arrayType(*elementType));
+}
+
+const TypeInfo* ExpressionTypeResolver::resolveRecordType(
+    const RecordType& type,
+    const TypeDeclaration* declaration
+) {
+    if (declaration != nullptr) {
+        return &typeCache.emplace_back(recordType(*declaration));
+    }
+
+    return &typeCache.emplace_back(recordType(type));
+}
+
+const TypeInfo* ExpressionTypeResolver::resolveType(
+    const TypeNode& type,
+    const TypeDeclaration* declaration
+) {
+    switch (type.nodeType) {
+    case NodeType::PrimitiveType:
+        return resolvePrimitiveType(static_cast<const PrimitiveType&>(type));
+    case NodeType::NamedType:
+        return resolveNamedType(static_cast<const NamedType&>(type));
+    case NodeType::ArrayType:
+        return resolveArrayType(static_cast<const ArrayType&>(type));
+    case NodeType::RecordType:
+        return resolveRecordType(
+            static_cast<const RecordType&>(type),
+            declaration
+        );
     default:
         return &errorType;
     }
@@ -61,20 +123,15 @@ const TypeInfo* ExpressionTypeResolver::resolveFieldType(
         return &errorType;
     }
 
-    const TypeInfo* type = resolveType(*field.type);
-    if (type->kind != TypeKind::Error) {
-        return type;
-    }
-
-    return &typeCache.emplace_back(errorType);
+    return resolveType(*field.type);
 }
 
 const TypeInfo* ExpressionTypeResolver::invalid(
-    const Expression& expression,
+    const Node& node,
     const string& message
 ) {
     errors.push_back(
-        "Semantic error (line " + to_string(expression.span.lineNum) +
+        "Semantic error (line " + to_string(node.span.lineNum) +
         "): " + message
     );
     return &errorType;

@@ -24,8 +24,9 @@ enum class TypeKind {
 
 struct TypeInfo {
     TypeKind kind = TypeKind::Error;
-    // kind == Record: the type declaration the record originated from.
-    const TypeDeclaration* record = nullptr;
+    // kind == Record: the AST node that owns the record type.
+    // Named records use TypeDeclaration; anonymous records use RecordType.
+    const Node* record = nullptr;
     // kind == Array: the element type.
     const TypeInfo* element = nullptr;
 };
@@ -37,6 +38,10 @@ inline const TypeInfo errorType{TypeKind::Error, nullptr, nullptr};
 
 inline TypeInfo recordType(const TypeDeclaration& declaration) {
     return TypeInfo{TypeKind::Record, &declaration, nullptr};
+}
+
+inline TypeInfo recordType(const RecordType& type) {
+    return TypeInfo{TypeKind::Record, &type, nullptr};
 }
 
 // elementType must outlive the returned value's use; the analyzer keeps the
