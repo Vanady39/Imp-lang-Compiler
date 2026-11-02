@@ -1,13 +1,13 @@
 #!/bin/sh
-# Golden tests: capture the compiler's current output for every test source
-# and diff later runs against it. Safety net for refactoring the parser.
+# Golden-тесты сохраняют текущий вывод compiler для каждого исходного файла
+# и сравнивают с ним последующие запуски.
 #
-#   tests/golden.sh update   (re)record expected output into tests/golden/
-#   tests/golden.sh check    run all tests and diff against tests/golden/ (default)
+#   tests/golden.sh update   заново записать ожидаемый вывод в tests/golden/
+#   tests/golden.sh check    проверить вывод относительно tests/golden/ (режим по умолчанию)
 #
-# Each golden file holds the exit code and the full stdout of build/compiler
-# (the tree printer and error messages all go to stdout). Re-run update only
-# when an output change is intentional.
+# Golden-файл содержит код завершения и весь stdout compiler. После подключения
+# семантического анализатора здесь сохраняются также семантические ошибки.
+# Режим update используется только для намеренного изменения ожидаемого вывода.
 
 set -u
 
@@ -36,7 +36,7 @@ trap 'rm -f "$tmp_actual" "$tmp_expected"' EXIT
 total=0
 failures=0
 
-# Every tests/<group>/<name>.txt, with the golden directory itself excluded.
+# Берём все тесты tests/<group>/<name>.txt, исключая сами golden-файлы.
 sources="$(find "$root/tests" -type d -name golden -prune -o -type f -name '*.txt' -print | sort)"
 
 for source in $sources; do
@@ -44,10 +44,12 @@ for source in $sources; do
     relative="${source#$root/tests/}"
     golden_file="$golden/${relative%.txt}.golden"
 
+    # Код 1 для semantic error является частью ожидаемого результата.
     exit_code=0
     actual="$("$binary" "$source" 2>&1)" || exit_code=$?
 
     if [ "$mode" = update ]; then
+        # При обновлении сохраняем и stdout, и код ошибки semantic analyzer.
         mkdir -p "$(dirname "$golden_file")"
         {
             printf '=== exit: %d ===\n' "$exit_code"
@@ -74,6 +76,7 @@ for source in $sources; do
     fi
 
     if [ "$failed" -ne 0 ]; then
+        # Показываем начало diff, чтобы быстро увидеть изменение ошибки или AST.
         echo "FAIL $relative"
         diff -u "$tmp_expected" "$tmp_actual" | head -30
         failures=$((failures + 1))

@@ -1,15 +1,2 @@
-=== exit: 0 ===
-Program
-  RoutineDeclaration test
-    Body
-      ForLoop i
-        From
-          IntegerLiteral 1
-        To
-          IntegerLiteral 3
-        Body
-          Assignment
-            Target
-              Name i
-            Value
-              IntegerLiteral 0
+=== exit: 1 ===
+Semantic error (line 3): assignment target 'i' is read-only
