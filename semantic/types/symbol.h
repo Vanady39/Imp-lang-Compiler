@@ -24,6 +24,8 @@ struct Symbol {
     const TypeInfo* type; // <- тип сущности
     bool readOnly; // <- имутебелен ли? 
     vector<RoutineDeclaration*> routineDeclarations; // <- список объявлений
+    vector<const TypeInfo*> parameterTypes;
+    bool hasDefinition = false;
 };
 
 #endif

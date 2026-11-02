@@ -30,6 +30,11 @@ public:
         ScopeStack& scopeStack
     ) = 0;
 
+    virtual bool areCompatible(
+        const TypeInfo& targetType,
+        const TypeInfo& valueType
+    ) = 0;
+
     virtual bool canAssign(
         const NameReference& expression,
         const TypeInfo& valueType,

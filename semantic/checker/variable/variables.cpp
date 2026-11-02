@@ -173,10 +173,7 @@ public:
             return *initializerType;
         }
 
-        if (sameType(*declaredType, *initializerType) 
-            || (declaredType->kind == TypeKind::Integer && initializerType->kind == TypeKind::Real) 
-            || (declaredType->kind == TypeKind::Real && initializerType->kind == TypeKind::Integer)
-        ) {
+        if (areCompatible(*declaredType, *initializerType)) {
             return *declaredType;
         }
 
@@ -187,6 +184,22 @@ public:
             "'; expected type '" + typeName(*declaredType) + "'"
         );
         return errorType;
+    }
+
+    bool areCompatible(
+        const TypeInfo& targetType,
+        const TypeInfo& valueType
+    ) override {
+        if (targetType.kind == TypeKind::Error ||
+            valueType.kind == TypeKind::Error) {
+            return true;
+        }
+
+        return sameType(targetType, valueType) ||
+            (targetType.kind == TypeKind::Integer &&
+             valueType.kind == TypeKind::Real) ||
+            (targetType.kind == TypeKind::Real &&
+             valueType.kind == TypeKind::Integer);
     }
 
     bool canAssign(
@@ -218,11 +231,7 @@ public:
 
         const TypeInfo& targetType = *symbol->type;
 
-        if (
-            sameType(targetType, valueType)
-            || (targetType.kind == TypeKind::Integer && valueType.kind == TypeKind::Real)
-            || (targetType.kind == TypeKind::Real && valueType.kind == TypeKind::Integer)
-        ) {
+        if (areCompatible(targetType, valueType)) {
             return true;
         }
 

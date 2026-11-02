@@ -28,6 +28,7 @@ add_library(semantic
     semantic/semantic-analyzer.cpp
     semantic/checker/checker.cpp
     semantic/checker/for-loop/for.cpp
+    semantic/checker/routine/routine.cpp
     semantic/checker/variable/variables.cpp
 )
 
