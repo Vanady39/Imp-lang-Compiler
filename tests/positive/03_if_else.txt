@@ -1,5 +1,7 @@
 routine test() is
+    var x : integer is 5
     if true then
+        var x : integer is 6
         print 1
     else
         print 2
