@@ -4,6 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "semantic/checker/checker.h"
+#include "semantic/optimizer/optimizer.h"
 
 #include <fstream>
 #include <iostream>
@@ -57,6 +58,9 @@ int runSourceFile(const string& path) {
     if (!semanticErrors.empty()) {
         return 1;
     }
+
+    unique_ptr<IOptimizer> optimizer = makeOptimizer();
+    optimizer->optimize(*program);
 
     printProgram(program.get());
     return 0;

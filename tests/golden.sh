@@ -2,12 +2,10 @@
 # Golden-тесты сохраняют текущий вывод compiler для каждого исходного файла
 # и сравнивают с ним последующие запуски.
 #
-#   tests/golden.sh update   заново записать ожидаемый вывод в tests/golden/
-#   tests/golden.sh check    проверить вывод относительно tests/golden/ (режим по умолчанию)
-#
-# Golden-файл содержит код завершения и весь stdout compiler. После подключения
-# семантического анализатора здесь сохраняются также семантические ошибки.
-# Режим update используется только для намеренного изменения ожидаемого вывода.
+#   tests/golden.sh check                 проверить все тесты
+#   tests/golden.sh check positive/03*   проверить выбранные тесты
+#   tests/golden.sh update                обновить ожидаемый вывод
+#   GOLDEN_VERBOSE=1 tests/golden.sh     напечатать PASS для каждого теста
 
 set -u
 
@@ -16,10 +14,11 @@ binary="$root/build/compiler"
 golden="$root/tests/golden"
 
 mode="${1:-check}"
+pattern="${2:-}"
 case "$mode" in
 update|check) ;;
 *)
-    echo "usage: tests/golden.sh [update|check]" >&2
+    echo "usage: tests/golden.sh [update|check] [relative-test-pattern]" >&2
     exit 2
     ;;
 esac
@@ -40,16 +39,19 @@ failures=0
 sources="$(find "$root/tests" -type d -name golden -prune -o -type f -name '*.txt' -print | sort)"
 
 for source in $sources; do
-    total=$((total + 1))
     relative="${source#$root/tests/}"
+    if [ -n "$pattern" ] && ! printf '%s\n' "$relative" | grep -E "$pattern" > /dev/null 2>&1; then
+        continue
+    fi
+
+    total=$((total + 1))
     golden_file="$golden/${relative%.txt}.golden"
 
     # Код 1 для semantic error является частью ожидаемого результата.
     exit_code=0
-    actual="$("$binary" "$source" 2>&1)" || exit_code=$?
+    actual="$($binary "$source" 2>&1)" || exit_code=$?
 
     if [ "$mode" = update ]; then
-        # При обновлении сохраняем и stdout, и код ошибки semantic analyzer.
         mkdir -p "$(dirname "$golden_file")"
         {
             printf '=== exit: %d ===\n' "$exit_code"
@@ -76,12 +78,18 @@ for source in $sources; do
     fi
 
     if [ "$failed" -ne 0 ]; then
-        # Показываем начало diff, чтобы быстро увидеть изменение ошибки или AST.
         echo "FAIL $relative"
         diff -u "$tmp_expected" "$tmp_actual" | head -30
         failures=$((failures + 1))
+    elif [ "${GOLDEN_VERBOSE:-0}" = 1 ]; then
+        echo "PASS $relative"
     fi
 done
+
+if [ "$total" -eq 0 ]; then
+    echo "no tests matched pattern: ${pattern:-<all>}" >&2
+    exit 2
+fi
 
 if [ "$mode" = update ]; then
     echo "done: $total golden file(s) written to ${golden#$root/}"

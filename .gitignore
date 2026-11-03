@@ -72,7 +72,7 @@ Testing/
 .vscode/
 
 # OpenSpec
-openspec/
+# Спецификации проекта хранятся в git и нужны для истории требований.
 
 .claude/
 compiler

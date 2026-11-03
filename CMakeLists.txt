@@ -26,6 +26,10 @@ add_library(parser
 add_library(semantic
     semantic/common/helpers/expression_type.cpp
     semantic/traversal/ast_traversal.cpp
+    semantic/optimizer/optimizer.cpp
+    semantic/optimizer/expression_optimizer/expression_optimizer.cpp
+    semantic/optimizer/body_optimizer/body_optimizer.cpp
+    semantic/optimizer/node_optimizer/node_optimizer.cpp
     semantic/checker/checker.cpp
     semantic/checker/condition/condition.cpp
     semantic/checker/for-loop/for.cpp
@@ -67,4 +71,12 @@ if(BUILD_TESTING)
     add_executable(semantic_base_tests tests/semantic_base.cpp)
     target_link_libraries(semantic_base_tests PRIVATE semantic)
     add_test(NAME semantic_base COMMAND semantic_base_tests)
+
+    add_test(
+        NAME golden_tests
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/golden.sh check
+    )
+    set_tests_properties(golden_tests PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 endif()
