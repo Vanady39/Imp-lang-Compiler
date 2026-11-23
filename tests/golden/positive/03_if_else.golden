@@ -2,5 +2,16 @@
 Program
   RoutineDeclaration test
     Body
-      PrintStatement
-        IntegerLiteral 1
+      VariableDeclaration x
+        Type
+          PrimitiveType integer
+        Initializer
+          IntegerLiteral 5
+      Body
+        VariableDeclaration x
+          Type
+            PrimitiveType integer
+          Initializer
+            IntegerLiteral 6
+        PrintStatement
+          IntegerLiteral 1

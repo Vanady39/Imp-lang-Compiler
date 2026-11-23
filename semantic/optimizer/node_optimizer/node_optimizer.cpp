@@ -19,14 +19,8 @@ void simplifyIf(NodePtr& node) {
     BodyPtr selected = condition->value
         ? std::move(statement->thenBody)
         : std::move(statement->elseBody);
-    if (selected == nullptr) {
-        node.reset();
-        return;
-    }
-
-    // Временный Body нужен, чтобы передать выбранную ветку наружу. На
-    // уровне родительского Body он сразу раскрывается в список items.
-    node = make_unique<Body>(selected->span, std::move(selected->items));
+    // Body выбранной ветки задаёт область видимости её объявлений.
+    node = std::move(selected);
 }
 
 } // namespace
