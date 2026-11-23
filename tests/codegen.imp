@@ -1,0 +1,56 @@
+var seed is 8
+type Counter is integer
+type Snapshot is record
+    var value : Counter is seed
+    var next is value + 1
+end
+
+routine makeSnapshot(ignored : integer) : Snapshot is
+    var seed is 99
+    var result : Snapshot
+    type Snapshot is integer
+    return result
+end
+
+routine realValue(enabled : boolean) : real => enabled
+
+routine listLength(items : array [] integer) : integer => items.length
+
+routine unit() : integer => 1
+
+routine demo(count : integer, ratio : real, enabled : boolean) is
+    print count, ratio, enabled
+end
+
+routine main() is
+    var a : integer is 10
+    if true then
+        var a : integer is 20
+        a := 30
+        print a
+    end
+    print a
+    var divisor is 2
+    print 7 / 2, 7 / divisor
+    var snapshot : Snapshot is makeSnapshot(0)
+    type Counter is boolean
+    print snapshot.value + 0, snapshot.next
+    var asReal : real is false
+    asReal := true
+    if 1 then
+        print asReal, realValue(1), not 0
+    end
+    var counter is 1
+    while counter loop
+        print unit
+        counter := 0
+    end
+    var values : array [1 + 2] integer
+    values[3] := 42
+    print values[3], listLength(values)
+    var i : real is 1.75
+    for i in i .. 2 loop
+        print i
+    end
+    print i
+end

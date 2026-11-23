@@ -1,13 +1,37 @@
 #include "runners/runner.h"
 
+#include <filesystem>
 #include <iostream>
+#include <string_view>
 
 using namespace std;
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        cout << "Usage: compiler <source-file>" << endl;
+    string source;
+    string output;
+    OutputKind kind = OutputKind::Bitcode;
+    const auto usage = [] {
+        cerr << "Usage: compiler <source-file> [-o <output>] [--emit-llvm | --dump-ast]\n";
         return 1;
+    };
+    for (int i = 1; i < argc; ++i) {
+        const string_view arg = argv[i];
+        if (arg == "-o" && output.empty() && i + 1 < argc) {
+            output = argv[++i];
+        } else if (arg == "--emit-llvm" && kind == OutputKind::Bitcode) {
+            kind = OutputKind::LlvmIr;
+        } else if (arg == "--dump-ast" && kind == OutputKind::Bitcode) {
+            kind = OutputKind::Ast;
+        } else if (!arg.starts_with('-') && source.empty()) {
+            source = arg;
+        } else {
+            return usage();
+        }
     }
-    return runSourceFile(argv[1]);
+    if (source.empty() || (kind == OutputKind::Ast && !output.empty())) return usage();
+    if (output.empty() && kind != OutputKind::Ast) {
+        auto path = filesystem::path(source);
+        output = path.replace_extension(kind == OutputKind::Bitcode ? ".bc" : ".ll").string();
+    }
+    return runSourceFile(source, output, kind);
 }

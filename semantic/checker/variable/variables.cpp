@@ -156,7 +156,7 @@ public:
             return *initializerType;
         }
 
-        if (areCompatible(*declaredType, *initializerType)) {
+        if (isAssignmentCompatible(*declaredType, *initializerType)) {
             return *declaredType;
         }
 
@@ -167,22 +167,6 @@ public:
             "'; expected type '" + typeName(*declaredType) + "'"
         );
         return errorType;
-    }
-
-    bool areCompatible(
-        const TypeInfo& targetType,
-        const TypeInfo& valueType
-    ) override {
-        if (targetType.kind == TypeKind::Error ||
-            valueType.kind == TypeKind::Error) {
-            return true;
-        }
-
-        return sameType(targetType, valueType) ||
-            (targetType.kind == TypeKind::Integer &&
-             valueType.kind == TypeKind::Real) ||
-            (targetType.kind == TypeKind::Real &&
-             valueType.kind == TypeKind::Integer);
     }
 
     bool canAssign(
@@ -214,15 +198,7 @@ public:
 
         const TypeInfo& targetType = *symbol->type;
 
-        if ((targetType.kind == TypeKind::Boolean &&
-             valueType.kind == TypeKind::Integer) ||
-            (targetType.kind == TypeKind::Integer &&
-             valueType.kind == TypeKind::Boolean)) {
-            // Язык разрешает преобразование 0/1 между integer и boolean.
-            return true;
-        }
-
-        if (areCompatible(targetType, valueType)) {
+        if (isAssignmentCompatible(targetType, valueType)) {
             return true;
         }
 

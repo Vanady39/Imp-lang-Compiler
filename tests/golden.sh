@@ -49,7 +49,7 @@ for source in $sources; do
 
     # Код 1 для semantic error является частью ожидаемого результата.
     exit_code=0
-    actual="$($binary "$source" 2>&1)" || exit_code=$?
+    actual="$("$binary" "$source" --dump-ast 2>&1)" || exit_code=$?
 
     if [ "$mode" = update ]; then
         mkdir -p "$(dirname "$golden_file")"

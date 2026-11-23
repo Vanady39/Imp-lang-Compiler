@@ -61,22 +61,6 @@ private:
         return true;
     }
 
-    // по названию и так очевидно
-    bool areCompatible(
-        const TypeInfo& targetType,
-        const TypeInfo& valueType
-    ) const {
-        if (targetType.kind == TypeKind::Error || valueType.kind == TypeKind::Error) {
-            return true;
-        }
-
-        return sameType(targetType, valueType) ||
-            (targetType.kind == TypeKind::Integer &&
-             valueType.kind == TypeKind::Real) ||
-            (targetType.kind == TypeKind::Real &&
-             valueType.kind == TypeKind::Integer);
-    }
-
 public:
     explicit CheckerRoutine(vector<string>& errors) : ICheckerRoutine(errors) {}
 
@@ -219,7 +203,7 @@ public:
                 return false;
             }
 
-            if (!areCompatible(
+            if (!isAssignmentCompatible(
                     *routine->parameterTypes[i],
                     *argumentTypes[i]
                 )) {

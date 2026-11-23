@@ -5,8 +5,8 @@
 
 using namespace std;
 
-// Единственная точка входа раннера: читает файл, прогоняет лексер и парсер,
-// печатает ошибки или дерево программы. Возвращает код завершения.
-int runSourceFile(const string& path);
+enum class OutputKind { Bitcode, LlvmIr, Ast };
+
+int runSourceFile(const string& path, const string& output, OutputKind kind);
 
 #endif

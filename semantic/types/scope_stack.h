@@ -49,8 +49,19 @@ public:
         return found == scopes.back().end() ? nullptr : &found->second;
     }
 
+    void rememberDeclarationType(const VariableDeclaration& declaration, const TypeInfo& type) {
+        declarationTypes.insert_or_assign(&declaration, &type);
+    }
+
+    const TypeInfo* declarationType(const VariableDeclaration& declaration) const {
+        const auto found = declarationTypes.find(&declaration);
+        return found == declarationTypes.end() ? nullptr : found->second;
+    }
+
 private:
     vector<unordered_map<string, Symbol>> scopes;
+    // Record field types are still needed after their declaration scopes close.
+    unordered_map<const VariableDeclaration*, const TypeInfo*> declarationTypes;
 };
 
 #endif

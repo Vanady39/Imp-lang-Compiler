@@ -4,14 +4,7 @@
 #include "lexer/lexer.h"
 #include "parser/ast.h"
 
-// Semantic type representation shared by compiler stages (the analyzer now,
-// optimizations and code generation later). TypeInfo does not copy the AST
-// type declarations: record identity is the TypeDeclaration node itself,
-// which gives nominal typing (two identically shaped records stay distinct).
-//
-// Array size is deliberately not part of the type: DECISIONS.md A5 lets a
-// sizeless array parameter receive a sized argument, so sizes are checked
-// separately from compatibility.
+#include <optional>
 
 enum class TypeKind {
     Integer,
@@ -29,6 +22,8 @@ struct TypeInfo {
     const Node* record = nullptr;
     // kind == Array: the element type.
     const TypeInfo* element = nullptr;
+    const TypeDeclaration* arrayDeclaration = nullptr;
+    std::optional<int> arraySize{};
 };
 
 inline const TypeInfo integerType{TypeKind::Integer, nullptr, nullptr};
@@ -46,12 +41,12 @@ inline TypeInfo recordType(const RecordType& type) {
 
 // elementType must outlive the returned value's use; the analyzer keeps the
 // element TypeInfo alive in its cache of declaration types.
-inline TypeInfo arrayType(const TypeInfo& elementType) {
-    return TypeInfo{TypeKind::Array, nullptr, &elementType};
+inline TypeInfo arrayType(const TypeInfo& elementType, std::optional<int> size = std::nullopt,
+                          const TypeDeclaration* declaration = nullptr) {
+    return TypeInfo{TypeKind::Array, nullptr, &elementType, declaration, size};
 }
 
-// Structural equality except records, which compare by declaration identity
-// (nominal typing, DECISIONS.md section A; test 14 depends on this).
+// Named aggregates compare by the identity of their type declaration.
 inline bool sameType(const TypeInfo& a, const TypeInfo& b) {
     if (a.kind == TypeKind::Error || b.kind == TypeKind::Error) {
         return false;
@@ -64,9 +59,30 @@ inline bool sameType(const TypeInfo& a, const TypeInfo& b) {
         return a.record != nullptr && a.record == b.record;
     case TypeKind::Array:
         return a.element != nullptr && b.element != nullptr &&
+               a.arrayDeclaration == b.arrayDeclaration && a.arraySize == b.arraySize &&
                sameType(*a.element, *b.element);
     default:
         return true;
+    }
+}
+
+inline bool isAssignmentCompatible(const TypeInfo& target, const TypeInfo& value) {
+    if (target.kind == TypeKind::Error || value.kind == TypeKind::Error) return true;
+    if (sameType(target, value)) return true;
+
+    switch (target.kind) {
+    case TypeKind::Integer:
+        return value.kind == TypeKind::Real || value.kind == TypeKind::Boolean;
+    case TypeKind::Real:
+        return value.kind == TypeKind::Integer || value.kind == TypeKind::Boolean;
+    case TypeKind::Boolean:
+        return value.kind == TypeKind::Integer;
+    case TypeKind::Array:
+        // A sizeless parameter retains the caller's array and its actual length.
+        return !target.arraySize && value.kind == TypeKind::Array &&
+               target.element && value.element && sameType(*target.element, *value.element);
+    default:
+        return false;
     }
 }
 

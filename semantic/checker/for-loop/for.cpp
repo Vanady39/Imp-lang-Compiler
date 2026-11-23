@@ -38,15 +38,6 @@ public:
             return false;
         }
 
-        if (scopeStack.currentScopeFind(forLoop.variable) != nullptr) {
-            errors.push_back(
-                "Semantic error (line " + to_string(forLoop.span.lineNum) +
-                "): duplicate declaration of loop variable '" +
-                forLoop.variable + "'"
-            );
-            return false;
-        }
-
         if (forLoop.rangeStart == nullptr) {
             errors.push_back(
                 "Semantic error (line " + to_string(forLoop.span.lineNum) +
@@ -61,7 +52,7 @@ public:
         if (startType->kind == TypeKind::Error) {
             return false;
         }
-        if (startType->kind != TypeKind::Integer) {
+        if (!isAssignmentCompatible(integerType, *startType)) {
             errors.push_back(
                 "Semantic error (line " +
                 to_string(forLoop.rangeStart->span.lineNum) +
@@ -82,7 +73,7 @@ public:
         if (endType->kind == TypeKind::Error) {
             return false;
         }
-        if (endType->kind != TypeKind::Integer) {
+        if (!isAssignmentCompatible(integerType, *endType)) {
             errors.push_back(
                 "Semantic error (line " +
                 to_string(forLoop.rangeEnd->span.lineNum) +
@@ -92,7 +83,7 @@ public:
         }
 
         // Runner добавит loop variable в scope на время обхода тела цикла.
-        // Atomic checker только проверяет тип и конфликт имени.
+        // Границы вычисляются в области до объявления переменной цикла.
         return true;
     }
 
@@ -105,15 +96,6 @@ public:
                 "Semantic error (line " + to_string(forLoop.span.lineNum) +
                 "): cannot declare loop variable '" + forLoop.variable +
                 "' without an active scope"
-            );
-            return false;
-        }
-
-        if (scopeStack.currentScopeFind(forLoop.variable) != nullptr) {
-            errors.push_back(
-                "Semantic error (line " + to_string(forLoop.span.lineNum) +
-                "): duplicate declaration of loop variable '" +
-                forLoop.variable + "'"
             );
             return false;
         }
