@@ -47,7 +47,7 @@ check_program(12_scope_and_boolean "1\n0\n2\n10\n20 1")
 check_program(13_forward_recursion "6")
 
 build_native(codegen.imp codegen)
-check_output(codegen "30\n10\n3 3\n8 9\n1 1 1\n1\n42 3\n2\n1.75")
+check_output(codegen "30\n10\n3 3\n8 9 1\n1 1 1\n1\n42 3\n2\n1.75")
 check_output(codegen "3 2.5 1" demo 3 2.5 1)
 
 execute_process(

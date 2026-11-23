@@ -62,9 +62,11 @@ target_link_libraries(parser
 add_executable(compiler
     main.cpp
     codegen/bitcode.cpp
+    codegen/entry.cpp
     codegen/expression.cpp
     codegen/function.cpp
     codegen/generator.cpp
+    codegen/statement.cpp
     runners/runner.cpp
     runners/ast_printers/ast_printer.cpp
 )

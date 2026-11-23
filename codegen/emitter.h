@@ -115,6 +115,8 @@ class Module {
     std::vector<std::string> entryNames;
 
     void declareRoutine(Function& global, const RoutineDeclaration& node);
+    const Routine* findDefaultRoutine() const;
+    void emitNamedEntries(Function& entry, const std::string& invalid);
     void emitEntry();
 
 public:

@@ -102,8 +102,11 @@ const Type* Function::typeOf(const Expression& expr) const {
         const auto* right = typeOf(*binary.right);
         return right == &module.real ? right : left;
     }
-    case NodeType::UnaryExpression:
-        return typeOf(*static_cast<const UnaryExpression&>(expr).operand);
+    case NodeType::UnaryExpression: {
+        const auto& unary = static_cast<const UnaryExpression&>(expr);
+        if (unary.op == tokenNot) return &module.boolean;
+        return typeOf(*unary.operand);
+    }
     case NodeType::RoutineCall: {
         const auto& call = static_cast<const RoutineCall&>(expr);
         const auto found = module.routines.find(call.name);

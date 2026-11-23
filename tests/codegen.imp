@@ -3,6 +3,7 @@ type Counter is integer
 type Snapshot is record
     var value : Counter is seed
     var next is value + 1
+    var flag is not 0
 end
 
 routine makeSnapshot(ignored : integer) : Snapshot is
@@ -34,7 +35,7 @@ routine main() is
     print 7 / 2, 7 / divisor
     var snapshot : Snapshot is makeSnapshot(0)
     type Counter is boolean
-    print snapshot.value + 0, snapshot.next
+    print snapshot.value + 0, snapshot.next, snapshot.flag and true
     var asReal : real is false
     asReal := true
     if 1 then
