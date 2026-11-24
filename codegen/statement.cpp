@@ -56,7 +56,10 @@ void Function::emitNode(const Node& node) {
 void Function::emitIf(const IfStatement& node) {
     const auto yes = label("if.then");
     const auto done = label("if.end");
-    const auto no = node.elseBody ? label("if.else") : done;
+    auto no = done;
+    if (node.elseBody) {
+        no = label("if.else");
+    }
     const auto condition = convert(expression(*node.condition), &module.boolean, *node.condition);
     branch(condition.ir, yes, no);
     block(yes);
@@ -91,18 +94,23 @@ void Function::emitFor(const ForLoop& node) {
     // Read the range once, before introducing the loop variable.
     Value first = expression(*node.rangeStart);
     const bool arrayRange = !node.rangeEnd;
-    Value last = arrayRange ? arrayLength(first) : expression(*node.rangeEnd);
     const auto array = first;
+    Value last;
     if (arrayRange) {
+        last = arrayLength(array);
         first = {&module.integer, "1"};
     } else {
+        last = expression(*node.rangeEnd);
         first = convert(first, &module.integer, *node.rangeStart);
         last = convert(last, &module.integer, *node.rangeEnd);
     }
     if (node.reverse) std::swap(first, last);
 
     const auto index = slot(&module.integer);
-    const auto variable = arrayRange ? slot(array.type->element) : index;
+    auto variable = index;
+    if (arrayRange) {
+        variable = slot(array.type->element);
+    }
     store(first, index);
     const auto test = label("for.test");
     const auto loop = label("for.body");
@@ -111,7 +119,10 @@ void Function::emitFor(const ForLoop& node) {
     jump(test);
     block(test);
     const auto iteration = load(index);
-    const std::string compare = node.reverse ? "icmp sge i32 " : "icmp sle i32 ";
+    std::string compare = "icmp sle i32 ";
+    if (node.reverse) {
+        compare = "icmp sge i32 ";
+    }
     branch(temporary(compare + iteration.ir + ", " + last.ir), loop, done);
     block(loop);
     // A numeric loop exposes its index. An array loop exposes the element.
@@ -123,7 +134,10 @@ void Function::emitFor(const ForLoop& node) {
         // Exit before stepping beyond INT_MAX or INT_MIN on the last iteration.
         branch(temporary("icmp eq i32 " + iteration.ir + ", " + last.ir), done, increment);
         block(increment);
-        const std::string step = node.reverse ? "sub i32 " : "add i32 ";
+        std::string step = "add i32 ";
+        if (node.reverse) {
+            step = "sub i32 ";
+        }
         store({&module.integer, temporary(step + iteration.ir + ", 1")}, index);
         jump(test);
     }

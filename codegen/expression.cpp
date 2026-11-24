@@ -100,7 +100,8 @@ const Type* Function::typeOf(const Expression& expr) const {
         if (binaryOpcode(binary).comparison) return &module.boolean;
         const auto* left = typeOf(*binary.left);
         const auto* right = typeOf(*binary.right);
-        return right == &module.real ? right : left;
+        if (right == &module.real) return right;
+        return left;
     }
     case NodeType::UnaryExpression: {
         const auto& unary = static_cast<const UnaryExpression&>(expr);
@@ -182,11 +183,12 @@ Value Function::binary(const BinaryExpression& expr) {
     auto right = expression(*expr.right);
     const auto opcode = binaryOpcode(expr);
     const bool useReal = left.type == &module.real || right.type == &module.real;
+    const char* instruction = opcode.integer;
     if (useReal) {
         left = convert(left, &module.real, expr);
         right = convert(right, &module.real, expr);
+        instruction = opcode.real;
     }
-    const char* instruction = useReal ? opcode.real : opcode.integer;
     if (!instruction || !sameStorageType(left.type, right.type) || left.type == &module.voidType) {
         fail(expr, "incompatible operands");
     }
@@ -199,8 +201,11 @@ Value Function::binary(const BinaryExpression& expr) {
                                         ", " + wideRight);
         return {&module.integer, temporary("trunc i64 " + quotient + " to i32")};
     }
-    return {opcode.comparison ? &module.boolean : left.type,
-            temporary(std::string(instruction) + " " + left.typed() + ", " + right.ir)};
+    const Type* resultType = left.type;
+    if (opcode.comparison) {
+        resultType = &module.boolean;
+    }
+    return {resultType, temporary(std::string(instruction) + " " + left.typed() + ", " + right.ir)};
 }
 
 Value Function::expression(const Expression& expr) {
@@ -210,7 +215,10 @@ Value Function::expression(const Expression& expr) {
     case NodeType::RealLiteral:
         return {&module.real, realConstant(static_cast<const RealLiteral&>(expr).value)};
     case NodeType::BooleanLiteral:
-        return {&module.boolean, static_cast<const BooleanLiteral&>(expr).value ? "true" : "false"};
+        if (static_cast<const BooleanLiteral&>(expr).value) {
+            return {&module.boolean, "true"};
+        }
+        return {&module.boolean, "false"};
     case NodeType::NameReference: {
         const auto& ref = static_cast<const NameReference&>(expr);
         if (!findBinding(ref.name) && module.routines.contains(ref.name)) {
@@ -241,10 +249,10 @@ Value Function::expression(const Expression& expr) {
             return {&module.boolean, temporary("xor " + value.typed() + ", true")};
         }
         if (unary.op == tokenMinus) {
-            const auto instruction = value.type == &module.real
-                ? "fneg " + value.typed()
-                : "sub i32 0, " + value.ir;
-            return {value.type, temporary(instruction)};
+            if (value.type == &module.real) {
+                return {value.type, temporary("fneg " + value.typed())};
+            }
+            return {value.type, temporary("sub i32 0, " + value.ir)};
         }
         fail(expr, "unsupported unary operator");
     }

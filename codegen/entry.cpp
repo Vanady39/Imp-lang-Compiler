@@ -58,7 +58,8 @@ const Routine* Module::findDefaultRoutine() const {
         if (name == "test") test = &routine;
         if (!first) first = &routine;
     }
-    return test ? test : first;
+    if (test) return test;
+    return first;
 }
 
 void Module::emitNamedEntries(Function& entry, const std::string& invalid) {

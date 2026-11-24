@@ -51,8 +51,11 @@ std::string Module::stringConstant(const std::string& value) {
 }
 
 void Module::declareRoutine(Function& global, const RoutineDeclaration& node) {
-    Routine signature{"@imp.routine." + std::to_string(routines.size()),
-                      node.returnType ? global.resolveType(*node.returnType) : &voidType, {}};
+    const Type* result = &voidType;
+    if (node.returnType) {
+        result = global.resolveType(*node.returnType);
+    }
+    Routine signature{"@imp.routine." + std::to_string(routines.size()), result, {}};
     for (const auto& param : node.parameters) {
         signature.parameters.push_back(global.resolveType(*param->type));
     }

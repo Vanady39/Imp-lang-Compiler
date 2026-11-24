@@ -31,7 +31,11 @@ int main(int argc, char** argv) {
     if (source.empty() || (kind == OutputKind::Ast && !output.empty())) return usage();
     if (output.empty() && kind != OutputKind::Ast) {
         auto path = filesystem::path(source);
-        output = path.replace_extension(kind == OutputKind::Bitcode ? ".bc" : ".ll").string();
+        const char* extension = ".bc";
+        if (kind == OutputKind::LlvmIr) {
+            extension = ".ll";
+        }
+        output = path.replace_extension(extension).string();
     }
     return runSourceFile(source, output, kind);
 }

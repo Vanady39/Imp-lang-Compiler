@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 using namespace std;
@@ -77,7 +78,12 @@ int runSourceFile(const string& path, const string& output, OutputKind kind) {
         }
         const auto ir = generateLlvmIr(*program);
         const auto bitcode = makeLlvmBitcode(ir);
-        const auto& contents = kind == OutputKind::Bitcode ? bitcode : ir;
+        string_view contents = bitcode;
+        const char* format = "LLVM bitcode";
+        if (kind == OutputKind::LlvmIr) {
+            contents = ir;
+            format = "LLVM IR";
+        }
         ofstream target(output, ios::binary);
         target.write(contents.data(), static_cast<streamsize>(contents.size()));
         target.close();
@@ -85,8 +91,7 @@ int runSourceFile(const string& path, const string& output, OutputKind kind) {
             cerr << "Cannot write output file: " << output << '\n';
             return 1;
         }
-        cout << "Wrote " << (kind == OutputKind::Bitcode ? "LLVM bitcode" : "LLVM IR")
-             << " to " << output << '\n';
+        cout << "Wrote " << format << " to " << output << '\n';
         return 0;
     } catch (const exception& error) {
         cerr << error.what() << '\n';

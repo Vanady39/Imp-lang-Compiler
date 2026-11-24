@@ -49,14 +49,16 @@ std::string Function::finish(const std::string& signature) {
 const Binding* Function::findBinding(const std::string& name) const {
     if (initializerScope) {
         auto found = initializerScope->find(name);
-        return found == initializerScope->end() ? nullptr : &found->second;
+        if (found == initializerScope->end()) return nullptr;
+        return &found->second;
     }
     for (auto scope = scopes.rbegin(); scope != scopes.rend(); ++scope) {
         auto found = scope->find(name);
         if (found != scope->end()) return &found->second;
     }
     auto found = module.scope.find(name);
-    return found == module.scope.end() ? nullptr : &found->second;
+    if (found == module.scope.end()) return nullptr;
+    return &found->second;
 }
 
 const Binding& Function::lookup(const std::string& name, const Node& node) const {
@@ -99,7 +101,10 @@ const Type* Function::resolveType(const TypeNode& node) {
     }
     case NodeType::ArrayType: {
         const auto& array = static_cast<const ArrayType&>(node);
-        const auto size = array.size ? constantInteger(*array.size) : std::nullopt;
+        std::optional<int> size;
+        if (array.size) {
+            size = constantInteger(*array.size);
+        }
         return module.addType({TypeKind::Array, "ptr", resolveType(*array.elementType),
                                size});
     }
@@ -109,8 +114,12 @@ const Type* Function::resolveType(const TypeNode& node) {
         type.initializerScope = visibleBindings();
         scopes.emplace_back();
         for (const auto& field : record.fields) {
-            const Type* fieldType = field->type ? resolveType(*field->type)
-                                                : typeOf(*field->initializer);
+            const Type* fieldType;
+            if (field->type) {
+                fieldType = resolveType(*field->type);
+            } else {
+                fieldType = typeOf(*field->initializer);
+            }
             type.fields.push_back({field.get(), fieldType});
             scopes.back().emplace(field->name, Binding{{fieldType, {}}});
         }
@@ -212,22 +221,43 @@ Value Function::defaultValue(const Type* type, const Node& node) {
 }
 
 void Function::variable(const VariableDeclaration& node, bool global) {
-    const auto* declared = node.type ? resolveType(*node.type) : nullptr;
-    const auto initial = node.initializer ? expression(*node.initializer) : defaultValue(declared, node);
-    const auto* type = declared ? declared : initial.type;
+    const Type* type = nullptr;
+    if (node.type) {
+        type = resolveType(*node.type);
+    }
+
+    Value initial;
+    if (node.initializer) {
+        initial = expression(*node.initializer);
+    } else {
+        initial = defaultValue(type, node);
+    }
+    if (!type) {
+        type = initial.type;
+    }
     if (type == &module.voidType) fail(node, "variable cannot store a procedure result");
-    const auto storage = global ? Value{type, module.addGlobal(type)} : slot(type);
+
+    Value storage;
+    auto* scope = &scopes.back();
+    if (global) {
+        storage = {type, module.addGlobal(type)};
+        scope = &module.scope;
+    } else {
+        storage = slot(type);
+    }
     store(convert(initial, type, node), storage);
-    auto& scope = global ? module.scope : scopes.back();
-    if (!scope.emplace(node.name, Binding{storage}).second) {
+    if (!scope->emplace(node.name, Binding{storage}).second) {
         fail(node, "duplicate declaration of '" + node.name + "'");
     }
 }
 
 void Function::typeDeclaration(const TypeDeclaration& node, bool global) {
     const auto* type = resolveType(*node.type);
-    auto& scope = global ? module.scope : scopes.back();
-    if (!scope.emplace(node.name, Binding{{type, {}}, true}).second) {
+    auto* scope = &scopes.back();
+    if (global) {
+        scope = &module.scope;
+    }
+    if (!scope->emplace(node.name, Binding{{type, {}}, true}).second) {
         fail(node, "duplicate declaration of '" + node.name + "'");
     }
 }
