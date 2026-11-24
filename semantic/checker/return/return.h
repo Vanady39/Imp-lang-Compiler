@@ -19,8 +19,9 @@ public:
     virtual ~ICheckerReturn() = default;
 
     virtual bool checkReturn(
-        const ReturnStatement& statement,
+        const Expression& value,
         const RoutineDeclaration* routine,
+        const TypeInfo* expected,
         ScopeStack& scopeStack
     ) = 0;
 };

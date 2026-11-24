@@ -95,9 +95,11 @@ private:
         }
         case NodeType::RecordType: {
             const RecordType& record = static_cast<const RecordType&>(type);
+            enterScope(record);
             for (const auto& field : record.fields) {
                 traverseNode(field.get());
             }
+            leaveScope(record);
             break;
         }
         case NodeType::IntegerLiteral:
@@ -212,9 +214,7 @@ private:
         }
         case NodeType::ForLoop: {
             const ForLoop& loop = static_cast<const ForLoop&>(statement);
-            traverseNode(loop.rangeStart.get());
-            traverseNode(loop.rangeEnd.get());
-            // Loop scope охватывает переменную цикла и его body.
+            // Границы уже проверены во внешней области.
             traverseNode(loop.body.get());
             break;
         }
@@ -285,6 +285,11 @@ private:
 
         // Сначала проверяется сама конструкция во внешней области.
         enterNode(*node);
+        if (node->nodeType == NodeType::ForLoop) {
+            const auto& loop = static_cast<const ForLoop&>(*node);
+            traverseNode(loop.rangeStart.get());
+            traverseNode(loop.rangeEnd.get());
+        }
         if (node->nodeType == NodeType::RoutineDeclaration ||
             node->nodeType == NodeType::ForLoop) {
             // Локальная область нужна только для дочерних узлов.

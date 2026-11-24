@@ -1,4 +1,5 @@
 #include "semantic/common/helpers/expression_type.h"
+#include "shared/types/constant_integer.h"
 
 #include <list>
 
@@ -21,7 +22,7 @@ private:
 
     const TypeInfo* resolvePrimitiveType(const PrimitiveType& type);
     const TypeInfo* resolveNamedType(const NamedType& type);
-    const TypeInfo* resolveArrayType(const ArrayType& type);
+    const TypeInfo* resolveArrayType(const ArrayType& type, const TypeDeclaration* declaration);
     const TypeInfo* resolveRecordType(
         const RecordType& type,
         const TypeDeclaration* declaration
@@ -108,7 +109,8 @@ const TypeInfo* ExpressionTypeResolver::resolveNamedType(
 }
 
 const TypeInfo* ExpressionTypeResolver::resolveArrayType(
-    const ArrayType& type
+    const ArrayType& type,
+    const TypeDeclaration* declaration
 ) {
     if (type.elementType == nullptr) {
         return &errorType;
@@ -119,7 +121,8 @@ const TypeInfo* ExpressionTypeResolver::resolveArrayType(
         return &errorType;
     }
 
-    return &typeCache.emplace_back(arrayType(*elementType));
+    const auto size = type.size ? constantInteger(*type.size) : std::nullopt;
+    return &typeCache.emplace_back(arrayType(*elementType, size, declaration));
 }
 
 const TypeInfo* ExpressionTypeResolver::resolveRecordType(
@@ -143,7 +146,7 @@ const TypeInfo* ExpressionTypeResolver::resolveType(
     case NodeType::NamedType:
         return resolveNamedType(static_cast<const NamedType&>(type));
     case NodeType::ArrayType:
-        return resolveArrayType(static_cast<const ArrayType&>(type));
+        return resolveArrayType(static_cast<const ArrayType&>(type), declaration);
     case NodeType::RecordType:
         return resolveRecordType(
             static_cast<const RecordType&>(type),
@@ -158,6 +161,9 @@ const TypeInfo* ExpressionTypeResolver::resolveType(
 const TypeInfo* ExpressionTypeResolver::resolveFieldType(
     const VariableDeclaration& field
 ) {
+    if (const auto* declared = scopeStack.declarationType(field)) {
+        return declared;
+    }
     if (field.type == nullptr) {
         return &errorType;
     }
@@ -203,6 +209,10 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
         if (symbol == nullptr) {
             return invalid(expression, "undeclared name '" + reference.name + "'");
         }
+        if (symbol->kind == SymbolKind::Routine && symbol->parameterTypes.empty() &&
+            symbol->type != nullptr) {
+            return symbol->type;
+        }
         if (symbol->kind != SymbolKind::Variable &&
             symbol->kind != SymbolKind::Parameter) {
             return invalid(
@@ -233,7 +243,7 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
              operand->kind == TypeKind::Real)) {
             return operand;
         }
-        if (unary.op == tokenNot && operand->kind == TypeKind::Boolean) {
+        if (unary.op == tokenNot && isAssignmentCompatible(booleanType, *operand)) {
             return &booleanType;
         }
         return invalid(
@@ -382,6 +392,10 @@ const TypeInfo* ExpressionTypeResolver::resolve(const Expression& expression) {
 
         if (objectType->kind == TypeKind::Error) {
             return &errorType;
+        }
+
+        if (objectType->kind == TypeKind::Array && access.member == "length") {
+            return &integerType;
         }
 
         if (objectType->kind != TypeKind::Record ||

@@ -1,19 +1,22 @@
 #include "runners/runner.h"
 
+#include "codegen/generator.h"
 #include "runners/ast_printers/ast_printer.h"
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "semantic/checker/checker.h"
 #include "semantic/optimizer/optimizer.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 using namespace std;
 
-int runSourceFile(const string& path) {
+int runSourceFile(const string& path, const string& output, OutputKind kind) {
     ifstream input(path);
     if (!input.is_open()) {
         cout << "Cannot open file" << endl;
@@ -62,6 +65,36 @@ int runSourceFile(const string& path) {
     unique_ptr<IOptimizer> optimizer = makeOptimizer();
     optimizer->optimize(*program);
 
-    printProgram(program.get());
-    return 0;
+    if (kind == OutputKind::Ast) {
+        printProgram(program.get());
+        return 0;
+    }
+
+    try {
+        error_code filesystemError;
+        if (filesystem::equivalent(path, output, filesystemError)) {
+            cerr << "Output path would overwrite the source file\n";
+            return 1;
+        }
+        const auto ir = generateLlvmIr(*program);
+        const auto bitcode = makeLlvmBitcode(ir);
+        string_view contents = bitcode;
+        const char* format = "LLVM bitcode";
+        if (kind == OutputKind::LlvmIr) {
+            contents = ir;
+            format = "LLVM IR";
+        }
+        ofstream target(output, ios::binary);
+        target.write(contents.data(), static_cast<streamsize>(contents.size()));
+        target.close();
+        if (!target) {
+            cerr << "Cannot write output file: " << output << '\n';
+            return 1;
+        }
+        cout << "Wrote " << format << " to " << output << '\n';
+        return 0;
+    } catch (const exception& error) {
+        cerr << error.what() << '\n';
+        return 1;
+    }
 }

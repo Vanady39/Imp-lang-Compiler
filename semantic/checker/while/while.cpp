@@ -50,7 +50,7 @@ public:
             return false;
         }
 
-        if (resolvedType->kind != TypeKind::Boolean) {
+        if (!isAssignmentCompatible(booleanType, *resolvedType)) {
             errors.push_back(
                 "Semantic error (line " +
                 to_string(whileLoop.span.lineNum) +

@@ -393,12 +393,12 @@ unordered_map<Expression*, TypeInfo> expressionTypes;
 ### `routineStack`
 
 ```cpp
-vector<const RoutineDeclaration*> routineStack;
+vector<RoutineContext> routineStack;
 ```
 
 Хранит текущий контекст рутин.
 
-При входе в `RoutineDeclaration` рутина добавляется в стек. При выходе удаляется. Это позволяет `returnChecker` определить, находится ли `return` внутри рутины и какой результат ожидается.
+При входе в `RoutineDeclaration` в стек добавляется контекст рутины с типами её параметров и результата, разрешёнными в области объявления. При выходе контекст удаляется. Локальное затенение имени типа не меняет сигнатуру.
 
 ### `ownedTypes`
 
@@ -488,7 +488,8 @@ unordered_map<const ForLoop*, const TypeInfo*> loopTypes;
 
 Проверяются существование имени, read-only статус и совместимость типов.
 
-Составные цели вроде `record.field` и `array[index]` пока требуют отдельного checker-сервиса.
+Для составных целей `record.field` и `array[index]` сравниваются типы
+цели и правой части. Свойство массива `length` доступно только для чтения.
 
 ### `checkCallStatement`
 
@@ -518,21 +519,20 @@ unordered_map<const ForLoop*, const TypeInfo*> loopTypes;
 
 | Узел | Действие |
 | --- | --- |
-| `VariableDeclaration` | `checkVariable` |
 | `TypeDeclaration` | `checkType` |
 | `RoutineDeclaration` | проверка и регистрация рутины |
 | `NameReference` | проверка видимости имени |
 | `Assignment` | проверка присваивания |
 | `CallStatement` | проверка вызова |
-| `IfStatement` | проверка boolean-условия |
-| `WhileLoop` | проверка boolean-условия |
+| `IfStatement` | проверка совместимости условия с `boolean` |
+| `WhileLoop` | проверка совместимости условия с `boolean` |
 | `ForLoop` | проверка диапазона и сохранение типа loop-переменной |
 | выражение | разрешение типа и проверка вызова рутины |
 | `ReturnStatement` | вызов `returnChecker` |
 
 ### `leave`
 
-При выходе из рутины удаляет её из `routineStack`.
+После обхода инициализатора проверяет и регистрирует переменную. При выходе из рутины проверяет тело в форме выражения и удаляет её контекст. При выходе из программы проверяет, что у каждого прототипа есть определение.
 
 ### `enterScope`
 
@@ -558,8 +558,9 @@ checker/return/return.cpp
 
 ```cpp
 virtual bool checkReturn(
-    const ReturnStatement& statement,
+    const Expression& value,
     const RoutineDeclaration* routine,
+    const TypeInfo* expected,
     ScopeStack& scopeStack
 ) = 0;
 ```
@@ -573,9 +574,7 @@ virtual bool checkReturn(
 
 Поддерживается совместимость:
 
-- одинаковых типов;
-- `integer` и `real` с числовым преобразованием;
-- `integer` и `boolean` согласно правилам языка;
+- скалярных типов по таблице присваиваний Project I;
 - номинально одинаковых записей;
 - совместимых массивов.
 

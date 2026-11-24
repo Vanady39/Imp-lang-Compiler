@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(compilers LANGUAGES CXX)
+project(compilers LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+find_package(LLVM REQUIRED CONFIG)
+if(LLVM_PACKAGE_VERSION VERSION_LESS 15)
+    message(FATAL_ERROR "LLVM 15 or newer is required for opaque pointers")
+endif()
 
 add_library(lexer
     lexer/lexer.cpp
@@ -56,6 +61,12 @@ target_link_libraries(parser
 
 add_executable(compiler
     main.cpp
+    codegen/bitcode.cpp
+    codegen/entry.cpp
+    codegen/expression.cpp
+    codegen/function.cpp
+    codegen/generator.cpp
+    codegen/statement.cpp
     runners/runner.cpp
     runners/ast_printers/ast_printer.cpp
 )
@@ -65,6 +76,15 @@ target_link_libraries(compiler
         parser
         semantic
 )
+target_include_directories(compiler SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
+if(TARGET LLVM)
+    target_link_libraries(compiler PRIVATE LLVM)
+elseif(TARGET LLVM-C)
+    target_link_libraries(compiler PRIVATE LLVM-C)
+else()
+    llvm_map_components_to_libnames(LLVM_LIBRARIES analysis bitwriter core irreader)
+    target_link_libraries(compiler PRIVATE ${LLVM_LIBRARIES})
+endif()
 
 include(CTest)
 if(BUILD_TESTING)
@@ -74,9 +94,18 @@ if(BUILD_TESTING)
 
     add_test(
         NAME golden_tests
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/golden.sh check
+        COMMAND "${CMAKE_COMMAND}" "-DCOMPILER=$<TARGET_FILE:compiler>"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_golden.cmake"
     )
-    set_tests_properties(golden_tests PROPERTIES
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+
+    find_program(LLVM_LLC NAMES llc-${LLVM_VERSION_MAJOR} llc HINTS "${LLVM_TOOLS_BINARY_DIR}")
+    if(LLVM_LLC AND NOT MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_test(
+            NAME llvm_codegen
+            COMMAND "${CMAKE_COMMAND}" "-DCOMPILER=$<TARGET_FILE:compiler>"
+                    "-DLLC=${LLVM_LLC}" "-DLINKER=${CMAKE_CXX_COMPILER}"
+                    "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-tests"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_codegen.cmake"
+        )
+    endif()
 endif()

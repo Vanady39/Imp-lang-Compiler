@@ -1,6 +1,7 @@
 #include "semantic/optimizer/expression_optimizer/expression_optimizer.h"
 
 #include "lexer/lexer.h"
+#include "shared/types/constant_integer.h"
 
 using namespace std;
 
@@ -16,7 +17,9 @@ ExpressionPtr foldUnary(ExpressionPtr expression) {
     if (unary->op == tokenMinus) {
         if (unary->operand->nodeType == NodeType::IntegerLiteral) {
             auto* value = static_cast<IntegerLiteral*>(unary->operand.get());
-            return make_unique<IntegerLiteral>(unary->span, -value->value);
+            const auto result = checkedInteger(-static_cast<int64_t>(value->value));
+            if (!result) return expression;
+            return make_unique<IntegerLiteral>(unary->span, *result);
         }
         if (unary->operand->nodeType == NodeType::RealLiteral) {
             auto* value = static_cast<RealLiteral*>(unary->operand.get());
@@ -72,6 +75,14 @@ ExpressionPtr foldBinary(ExpressionPtr expression) {
         return expression;
     }
 
+    // Preserve the checker's integer result type, including integer division.
+    if (leftInteger && rightInteger) {
+        const auto value = constantIntegerBinary(binary->op, static_cast<int>(left),
+                                                 static_cast<int>(right));
+        if (!value) return expression;
+        return make_unique<IntegerLiteral>(binary->span, *value);
+    }
+
     double value = 0.0;
     switch (binary->op) {
     case tokenPlus:
@@ -86,15 +97,8 @@ ExpressionPtr foldBinary(ExpressionPtr expression) {
     case tokenSlash:
         value = left / right;
         break;
-    case tokenPercent:
-        value = static_cast<int>(left) % static_cast<int>(right);
-        break;
     default:
         return expression;
-    }
-
-    if (leftInteger && rightInteger && binary->op != tokenSlash) {
-        return make_unique<IntegerLiteral>(binary->span, static_cast<int>(value));
     }
 
     return make_unique<RealLiteral>(binary->span, value);

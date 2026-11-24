@@ -4,7 +4,7 @@
 # Использование:
 #   ./build.sh                      — только собрать
 #   ./build.sh tests/positive/01_variables.txt
-#                                   — собрать и запустить на одном файле
+#                                   — собрать компилятор и сгенерировать LLVM bitcode
 #   ./build.sh --all-tests          — собрать и прогнать все тесты
 
 set -euo pipefail
@@ -21,12 +21,7 @@ if [ $# -eq 0 ]; then
 fi
 
 if [ "$1" = "--all-tests" ]; then
-    status=0
-    for f in tests/*/*.txt; do
-        echo "=== $f ==="
-        "$COMPILER" "$f" || status=1
-    done
-    exit $status
+    exec ctest --test-dir build --output-on-failure
 fi
 
 exec "$COMPILER" "$@"

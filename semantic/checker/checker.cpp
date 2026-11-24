@@ -8,11 +8,18 @@
 #include "semantic/checker/while/while.h"
 #include "semantic/common/helpers/expression_type.h"
 #include "semantic/traversal/ast_traversal.h"
+#include "shared/types/constant_integer.h"
 
 using namespace std;
 
 class Checker final : public IChecker, public IAstTraversalObserver {
 private:
+    struct RoutineContext {
+        const RoutineDeclaration& declaration;
+        const TypeInfo* result;
+        vector<const TypeInfo*> parameters;
+    };
+
     vector<string> errors;
     ScopeStack* scopeStack = nullptr;
     CheckResult result;
@@ -23,7 +30,7 @@ private:
     unique_ptr<ICheckerCondition> conditionChecker;
     unique_ptr<ICheckerWhile> whileChecker;
     unique_ptr<IExpressionTypeResolver> typeResolver;
-    vector<const RoutineDeclaration*> routineStack;
+    vector<RoutineContext> routineStack;
     vector<unique_ptr<TypeInfo>> ownedTypes;
     unordered_map<const ForLoop*, const TypeInfo*> loopTypes;
 
@@ -35,10 +42,26 @@ private:
         whileChecker = makeCheckerWhile(*scopeStack, errors);
     }
 
-    const TypeInfo* resolveType(const TypeNode* type) {
+    void checkArraySizes(const TypeNode& node, bool allowUnsized) {
+        if (node.nodeType != NodeType::ArrayType) return;
+        const auto& array = static_cast<const ArrayType&>(node);
+        const string location = "Semantic error (line " + to_string(node.span.lineNum) + "): ";
+        if (array.size) {
+            const auto size = constantInteger(*array.size);
+            if (!size || *size < 0) {
+                errors.push_back(location + "array size must be a non-negative integer constant");
+            }
+        } else if (!allowUnsized) {
+            errors.push_back(location + "only array parameters may omit their size");
+        }
+        checkArraySizes(*array.elementType, false);
+    }
+
+    const TypeInfo* resolveType(const TypeNode* type, bool allowUnsized = false) {
         if (type == nullptr) {
             return nullptr;
         }
+        checkArraySizes(*type, allowUnsized);
         return typeResolver->resolveType(*type);
     }
 
@@ -135,9 +158,11 @@ private:
             declaredType,
             initializerType
         );
-        if (inferredType.kind != TypeKind::Error) {
+        if (inferredType.kind != TypeKind::Error &&
+            variableChecker->declareVariable(declaration, &inferredType, *scopeStack)) {
             // Символ хранит указатель, поэтому сохраняем тип до конца анализа.
             ownedTypes.push_back(make_unique<TypeInfo>(inferredType));
+            scopeStack->rememberDeclarationType(declaration, *ownedTypes.back());
             registerSymbol(
                 declaration.name,
                 SymbolKind::Variable,
@@ -150,6 +175,7 @@ private:
     // Именованный тип должен попасть в таблицу до обхода следующих
     // деклараций, иначе NamedType не сможет его разрешить.
     void checkType(const TypeDeclaration& declaration) {
+        checkArraySizes(*declaration.type, false);
         const TypeInfo* type = typeResolver->resolveType(
             *declaration.type,
             &declaration
@@ -166,7 +192,21 @@ private:
 
     void checkAssignment(const Assignment& assignment) {
         const TypeInfo* valueType = typeResolver->resolve(*assignment.value);
+        if (assignment.target->nodeType == NodeType::MemberAccess) {
+            const auto& member = static_cast<const MemberAccess&>(*assignment.target);
+            const auto* object = typeResolver->resolve(*member.object);
+            if (object->kind == TypeKind::Array && member.member == "length") {
+                errors.push_back("Semantic error (line " + to_string(member.span.lineNum) +
+                                 "): array length is read-only");
+                return;
+            }
+        }
         if (assignment.target->nodeType != NodeType::NameReference) {
+            const TypeInfo* targetType = typeResolver->resolve(*assignment.target);
+            if (!isAssignmentCompatible(*targetType, *valueType)) {
+                errors.push_back("Semantic error (line " + to_string(assignment.span.lineNum) +
+                                 "): assignment target and value have incompatible types");
+            }
             return;
         }
         const NameReference* name = dynamic_cast<const NameReference*>(
@@ -175,11 +215,28 @@ private:
         if (name != nullptr) {
             variableChecker->canAssign(*name, *valueType, *scopeStack);
         }
-        // Проверки составных целей будут подключены отдельным checker-сервисом.
     }
 
     void checkCallStatement(const CallStatement& statement) {
         checkExpression(*statement.call);
+    }
+
+    void checkReturn(const Expression& value) {
+        const auto* routine = routineStack.empty() ? nullptr : &routineStack.back();
+        returnChecker->checkReturn(value, routine ? &routine->declaration : nullptr,
+                                   routine ? routine->result : nullptr, *scopeStack);
+    }
+
+    void checkRoutineDefinitions(const Program& program) {
+        for (const auto& declaration : program.declarations) {
+            if (declaration->nodeType != NodeType::RoutineDeclaration) continue;
+            const auto* symbol = scopeStack->currentScopeFind(declaration->name);
+            if (symbol && symbol->kind == SymbolKind::Routine && !symbol->hasDefinition &&
+                symbol->routineDeclarations.front() == declaration.get()) {
+                errors.push_back("Semantic error (line " + to_string(declaration->span.lineNum) +
+                                 "): routine '" + declaration->name + "' has no definition");
+            }
+        }
     }
 
 public:
@@ -214,9 +271,6 @@ public:
     void enter(const Node& node, ScopeStack& currentScopes) override {
         (void)currentScopes;
         switch (node.nodeType) {
-        case NodeType::VariableDeclaration:
-            checkVariable(static_cast<const VariableDeclaration&>(node));
-            break;
         case NodeType::TypeDeclaration:
             checkType(static_cast<const TypeDeclaration&>(node));
             break;
@@ -227,17 +281,22 @@ public:
                 static_cast<const RoutineDeclaration&>(node);
             vector<const TypeInfo*> parameterTypes;
             for (const auto& parameter : declaration.parameters) {
-                parameterTypes.push_back(resolveType(parameter->type.get()));
+                parameterTypes.push_back(resolveType(parameter->type.get(), true));
             }
             const TypeInfo* returnType = resolveType(declaration.returnType.get());
             registerRoutine(declaration, parameterTypes, returnType);
-            routineStack.push_back(&declaration);
+            routineStack.push_back({declaration, returnType, std::move(parameterTypes)});
             break;
         }
         case NodeType::NameReference: {
             const NameReference& reference =
                 static_cast<const NameReference&>(node);
-            variableChecker->checkNameReference(reference, *scopeStack);
+            const auto* symbol = scopeStack->lookup(reference.name);
+            if (symbol && symbol->kind == SymbolKind::Routine) {
+                checkExpression(reference);
+            } else {
+                variableChecker->checkNameReference(reference, *scopeStack);
+            }
             break;
         }
         case NodeType::Assignment:
@@ -286,17 +345,21 @@ public:
         case NodeType::PrintStatement:
             // Для print отдельного семантического правила пока нет.
             break;
-        case NodeType::ReturnStatement:
-            returnChecker->checkReturn(
-                static_cast<const ReturnStatement&>(node),
-                routineStack.empty() ? nullptr : routineStack.back(),
-                *scopeStack
-            );
+        case NodeType::ReturnStatement: {
+            const auto& statement = static_cast<const ReturnStatement&>(node);
+            if (statement.value) {
+                checkReturn(*statement.value);
+            } else {
+                errors.push_back("Semantic error (line " + to_string(node.span.lineNum) +
+                                 "): return value is required");
+            }
             break;
+        }
         case NodeType::PrimitiveType:
         case NodeType::NamedType:
         case NodeType::ArrayType:
         case NodeType::RecordType:
+        case NodeType::VariableDeclaration:
         case NodeType::Body:
         case NodeType::Program:
             break;
@@ -305,9 +368,14 @@ public:
 
     void leave(const Node& node, ScopeStack& currentScopes) override {
         (void)currentScopes;
-        if (node.nodeType == NodeType::RoutineDeclaration &&
-            !routineStack.empty()) {
+        if (node.nodeType == NodeType::VariableDeclaration) {
+            checkVariable(static_cast<const VariableDeclaration&>(node));
+        } else if (node.nodeType == NodeType::RoutineDeclaration) {
+            const auto& routine = routineStack.back().declaration;
+            if (routine.expressionBody) checkReturn(*routine.expressionBody);
             routineStack.pop_back();
+        } else if (node.nodeType == NodeType::Program) {
+            checkRoutineDefinitions(static_cast<const Program&>(node));
         }
     }
 
@@ -331,10 +399,11 @@ public:
             return;
         }
 
-        const RoutineDeclaration& routine =
-            static_cast<const RoutineDeclaration&>(node);
-        for (const auto& parameter : routine.parameters) {
-            const TypeInfo* type = resolveType(parameter->type.get());
+        const auto& context = routineStack.back();
+        const auto& parameters = context.declaration.parameters;
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            const auto& parameter = parameters[i];
+            const TypeInfo* type = context.parameters[i];
             if (type != nullptr && type->kind != TypeKind::Error) {
                 registerSymbol(
                     parameter->name,
